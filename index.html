@@ -171,6 +171,7 @@
   #dlgc button:hover{background:rgba(58,48,36,.96);border-color:#c9b489}
   #dlgc button i{color:#8e8272;font-style:normal;margin-right:7px;font-size:12px}
   /* ---------- 底部内心字幕 ---------- */
+  #sub .subline{line-height:1.55;margin-top:2px}
   #sub{position:fixed;left:50%;bottom:104px;transform:translateX(-50%) translateY(7px);z-index:39;
     pointer-events:none;opacity:0;transition:opacity .5s ease,transform .5s ease;max-width:74vw;
     text-align:center;font-size:16.5px;line-height:1.7;letter-spacing:1.2px;color:#e2d8c0;
@@ -211,7 +212,21 @@
 #pset{flex-shrink:0;max-width:90vw}
 #dlg{max-width:min(460px,84vw)}
 #dlgb{border-radius:8px;box-shadow:0 8px 30px #0007}
-#dlgc{bottom:calc(100px + var(--sab));width:min(370px,calc(100vw - 32px));gap:8px}
+/* 选项多的时候（比如思索菜单有 8 条办法 + 再想想）必须能滚动，
+   否则按钮会被顶出屏幕 —— 手机端"所有按钮消失"就是这个。
+   注意：底部是锚点，加 max-height + overflow 才对。 */
+  #dlgc{bottom:calc(100px + var(--sab));width:min(370px,calc(100vw - 32px));gap:8px;
+    max-height:calc(100vh - 210px - var(--sat) - var(--sab));
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+    display:flex;flex-direction:column;padding:2px}
+  #dlgc button{flex:0 0 auto}
+  #grid .slot{position:relative}
+  #grid .slot.sel{outline:2px solid #e0c489;outline-offset:-2px;background:rgba(74,62,44,.92)}
+  #grid .slot .drop{position:absolute;right:2px;top:2px;width:19px;height:19px;min-height:0;padding:0;
+    border-radius:4px;border:1px solid rgba(200,120,100,.55);background:rgba(48,24,20,.9);
+    color:#e8b9a8;font:600 10px/16px system-ui,sans-serif;cursor:pointer}
+  #grid .slot .drop:hover{background:rgba(96,40,32,.95);color:#fff}
+  #bagnote{font-size:11px;color:#a99b83;text-align:center;letter-spacing:.04em;margin-top:4px}
 #dlgc button{min-width:unset;width:100%;min-height:44px;border-radius:6px}
 #pro{z-index:44;background:rgba(7,8,10,.76);padding:calc(20px + var(--sat)) 12px calc(20px + var(--sab))}
 #protext{font-size:clamp(18px,3.2vw,25px);line-height:1.9;max-width:620px;padding:0 16px}
@@ -230,7 +245,13 @@
   .menu-choice:hover,.menu-choice:focus-visible,.menu-choice.selected{background:linear-gradient(180deg,rgba(146,120,78,.38),rgba(96,78,50,.34));border-color:#e0c489;outline:0;
     box-shadow:0 0 0 1px #e0c48944,0 6px 22px #0007}
   #menu-items .menu-choice:last-child{border-color:rgba(205,186,146,.26)}
-#tut{position:fixed;left:50%;top:calc(74px + var(--sat));transform:translateX(-50%);z-index:26;
+#talent-tag{position:fixed;right:calc(10px + var(--sar));top:calc(8px + var(--sat));z-index:26;
+    pointer-events:none;font:600 11px/1.4 system-ui,sans-serif;letter-spacing:.10em;
+    color:#d9c08a;background:rgba(12,14,16,.62);border:1px solid rgba(212,190,145,.30);
+    border-radius:6px;padding:3px 9px;opacity:.92}
+  #talent-tag b{color:#f2d79a;font-weight:700}
+  #talent-tag i{font-style:normal;color:#8d8578;font-size:10px;letter-spacing:0}
+  #tut{position:fixed;left:50%;top:calc(74px + var(--sat));transform:translateX(-50%);z-index:26;
     display:none;pointer-events:none;font:500 13px/1.5 system-ui,sans-serif;letter-spacing:.08em;
     color:#eadfc2;background:rgba(12,14,16,.82);border:1px solid rgba(212,190,145,.34);
     border-radius:8px;padding:7px 15px;box-shadow:0 8px 30px #0009;white-space:nowrap}
@@ -340,6 +361,8 @@
   <div class="invhead"><h2>背 包</h2><button id="bag-close" type="button" aria-label="关闭背包">×</button></div>
   <div id="grid"></div>
   <div class="foot" id="bagfoot">按 1–8 或点格子使用 · B / Esc 关闭</div>
+  <div id="bagnote"></div>
+  <div class="foot" id="talfoot" style="color:#c8b183"></div>
 </div></div>
 
 <div id="title" aria-hidden="true"></div>
@@ -348,6 +371,7 @@
 <div id="pro"><div id="protext"></div><div id="prohint">点击 / 空格 继续</div><button id="proskip" type="button">跳 过</button></div>
 
 <div id="devp"></div>
+<div id="talent-tag" title="你的天赋"></div>
 <div id="devtag"></div>
 <div id="devpv"></div>
 <div id="dlg"><div id="dlgb"></div><div id="dlgc"></div></div>
@@ -357,7 +381,9 @@
 <div id="end"><h1 id="endt"></h1><ul id="endl"></ul><button class="btn" id="endbtn">返回主菜单</button></div>
 <div id="pause">
   <div class="ph">暂 停</div>
-  <div id="pausehelp">WASD 移动 · Shift 疾跑 · E 互动 · H 思考 · B 背包 · V 视角 · M 地图 · G 丢掉<br>背包打开时 1-8 使用对应道具</div>
+  <div id="pausehelp"><b>E</b> 互动（翻找 · 进出 · 上下楼 · 做实验）　<b>F</b> 捡起／放下　<b>G</b> 丢掉选中的<br>
+      <b>W A S D</b> 移动　<b>Shift</b> 疾跑　<b>B</b> 背包　<b>V</b> 第一人称　<b>M</b> 地图　<b>H</b> 思索<br>
+      楼梯上 <b>E</b> 上楼 · <b>Shift+E</b> 下楼　　背包打开时 <b>1-8</b> 使用对应道具</div>
       <button class="btn" id="pbResume">继 续 游 戏</button>
   <button class="btn" id="pbSave">保 存 进 度</button>
   <button class="btn" id="pbLoad">读 取 进 度</button>
@@ -382,7 +408,7 @@ var STEP=1/60, DTMAX=1/15, TAU=Math.PI*2, DEG=Math.PI/180, BAG_MAX=8;
 var SC=2.0;
 var SPD_WALK=21, SPD_RUN=36.4, STAM_MAX=100, STAM_DRAIN=17, STAM_REGEN=11;
 var FOV=90*DEG, FOV_FEATHER=6*DEG;      // 视野 ±90°，再各羽化 6°
-var TCOLS=60, TROWS=26, TTILE=9;   // 走廊加宽到 9 行（81 单位），不再挤
+var TCOLS=63, TROWS=26, TTILE=9;   // 走廊加宽到 9 行（81 单位），东端再加一条连廊大厅
 var RATE_CLASS=80;    // 上课
 var RATE_BREAK=12;    // 课间   —— 三次课间合计 ≈ 5 真实分钟
 var RATE_MEAL =14;    // 午饭 / 午休 / 晚饭 —— 合计 ≈ 15 真实分钟
@@ -557,6 +583,11 @@ var ITEMS={
   brolly:{ n:'雨伞', svg:'<svg viewBox="0 0 32 32"><path d="M4 16a12 12 0 0124 0z"/><path d="M16 16v9a3 3 0 006 0"/><path d="M16 16V5"/></svg>' },
   coat:{ n:'校服外套', svg:'<svg viewBox="0 0 32 32"><path d="M11 6l5 3.5L21 6l5 5-3 3v12H9V14L6 11z"/><path d="M16 9.5V26"/></svg>' },
   pill:{ n:'药片', svg:'<svg viewBox="0 0 32 32"><g transform="rotate(-30 16 16)"><rect x="6" y="11.5" width="20" height="9" rx="4.5"/><path d="M16 11.5v9"/></g></svg>' },
+  snack:{ n:'士力架', svg:'<svg viewBox="0 0 32 32"><rect x="7" y="9" width="18" height="14" rx="3"/><path d="M7 13h18M7 19h18"/><path d="M11 9V6.5M21 9V6.5"/></svg>' },
+  battery:{ n:'电池', svg:'<svg viewBox="0 0 32 32"><rect x="6" y="11" width="20" height="11" rx="2"/><path d="M26 14.5v4"/><path d="M12 13.5v6M17 13.5v6M22 13.5v6"/></svg>' },
+  compass:{ n:'罗盘', svg:'<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10.5"/><circle cx="16" cy="16" r="1.8"/><path d="M16 6.5v3M16 22.5v3M6.5 16h3M22.5 16h3"/><path d="M20 12l-5 9 5-3z"/></svg>' },
+  metronome:{ n:'节拍器', svg:'<svg viewBox="0 0 32 32"><path d="M12 25l4-18 4 18z"/><path d="M9 25h14"/><path d="M15.5 12l6 4"/></svg>' },
+  goggles:{ n:'护目镜', svg:'<svg viewBox="0 0 32 32"><path d="M4 16a5 5 0 015-5h14a5 5 0 015 5v1a5 5 0 01-5 5H9a5 5 0 01-5-5z"/><circle cx="11.5" cy="16.5" r="3"/><circle cx="20.5" cy="16.5" r="3"/></svg>' },
   hw:{ n:'作业本', svg:'<svg viewBox="0 0 32 32"><path d="M7 5h18v22H9a2 2 0 01-2-2z"/><path d="M7 25a2 2 0 012-2h16"/><path d="M12 10h9M12 14h9M12 18h6"/></svg>' },
   coin:{ n:'硬币', svg:'<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10"/><path d="M16 10.5v11M12.5 13.5h7M12.5 18.5h7"/></svg>' },
   usb:{ n:'U盘', svg:'<svg viewBox="0 0 32 32"><rect x="11" y="5" width="10" height="8" rx="1"/><path d="M13 13h6v12a3 3 0 01-6 0z"/><path d="M13.5 8.5h1.5M16.5 8.5h1.5"/></svg>' },
@@ -672,17 +703,68 @@ var NOTES=[
   { x:500, y:1085, t:'我：墙根有划痕，一排一排的，像有人在数天数。', seen:0 },
   { x:380, y:620, t:'我：这里以前应该有个门。现在是墙。', seen:0 }
 ];
-function roofTick(){
-  if (S.room!=='teach6'||RT.dblSeen) return;
-  var R=INTERIORS['teach6']; if(!R) return;
-  var fx=R.ox+R.w*0.76, fy=R.oy+R.h*0.40;
-  var dx=S.x-fx, dy=S.y-fy;
-  if (dx*dx+dy*dy < 1600){
-    RT.dblSeen=1; S.san-=14; flashBack(1.6);
+/* 天台那个人站的位置 —— 绘制、触发、提示三处必须用同一个公式 */
+function resetTwin(){ TWIN.length=0; TWIN_TURN=0; TWIN_MOUTH=0; TWIN_OFF=null; RT.dblSeen=0; }
+function twinBase(){ var R=INTERIORS['teach6']; if(!R) return null; return { x:R.ox+R.w*0.76, y:R.oy+R.h*0.40 }; }
+function twinPos(){ return TWIN_OFF || twinBase(); }
+function twinNear(){
+  if (S.room!=='teach6') return false;
+  var p=twinPos(); if(!p) return false;
+  var dx=S.x-p.x, dy=S.y-p.y;
+  return dx*dx+dy*dy < 80*80;
+}
+/* 按 E 看那个人 —— 可以反复看，每次说的话往下走一层 */
+var TWIN=[];              // 看过几次
+var TWIN_TURN=0;          // 1 = 已经转过来（面朝你）
+var TWIN_MOUTH=0;         // 张嘴程度
+var TWIN_OFF=null;        // 走位覆盖：设了就用这个位置，不再用天台原点
+/* resetTwin / twinBase 定义在上面（L707-708），这里不再重复 */
+function twinLook(){
+  if (S.room!=='teach6') return;
+  SFX.ui();
+  var n=TWIN.length;
+  var base=twinBase(); if(!base) return;
+  if (n===0){
+    /* ① 「他转过来了」→ 模型真的转成正面；「他张嘴了」→ 真的张嘴 */
+    TWIN.push(1);
+    TWIN_TURN=1; TWIN_MOUTH=0;
+    TWIN_OFF={ x:base.x, y:base.y };
+    S.san=Math.max(0,S.san-14); flashBack(1.6);
     os('我：他转过来了。',3.2);
     setTimeout(function(){ os('我：那是我。',3.6); },2200);
+    setTimeout(function(){ TWIN_MOUTH=1; },4400);
     setTimeout(function(){ os('我：他张嘴了，可是没有声音。',4.4); },5200);
+    RT.dblSeen=1;
+  } else if (n===1){
+    /* ② 「他就往前挪了一点」→ 位置真的朝你移动 */
+    TWIN.push(1);
+    var tp0=twinPos();
+    var dx0=S.x-tp0.x, dy0=S.y-tp0.y, d0=Math.sqrt(dx0*dx0+dy0*dy0)||1;
+    var step=Math.min(d0*0.55, 70);
+    TWIN_OFF={ x:tp0.x+dx0/d0*step, y:tp0.y+dy0/d0*step };
+    S.san=Math.max(0,S.san-5);
+    os('我：他还是那个姿势。连衣角折的地方都一样。',4.6);
+    setTimeout(function(){ os('我：我数到十，他就往前挪了一点。',4.4); },2800);
+  } else if (n===2){
+    /* ③ 「一转身他就在我前面」→ 直接瞬移到你正前方 52 单位 */
+    TWIN.push(1);
+    TWIN_OFF={ x:S.x+Math.cos(S.ang)*52, y:S.y+Math.sin(S.ang)*52 };
+    TWIN_MOUTH=0.85;
+    S.san=Math.max(0,S.san-20); flashBack(1.0);
+    os('我：我不看了。',3.0);
+    setTimeout(function(){ os('我：……可是我一转身，他就在我前面。',4.6); },2400);
+  } else {
+    /* ④ 「既没有杀我」—— 现在有了 */
+    kill('你看了他第四次。这一次，是他先眨的眼。','twin');
   }
+}
+function roofTick(){
+  /* 走到很近（4 格以内）自动触发一次；之后就只能按 E 主动看。
+     原来这里有 dblSeen 挡着，触发过一次就永远静默 —— 玩家看起来就是"没反应"。 */
+  if (S.room!=='teach6' || RT.dblSeen) return;
+  var p=twinPos(); if(!p) return;
+  var dx=S.x-p.x, dy=S.y-p.y;
+  if (dx*dx+dy*dy < (38*38)) twinLook();      // twinLook 里会设 dblSeen
 }
 /* ============================ 探索点与推理 ============================
    在校园里走到某些地方会"注意到"一件事（探索点）。攒够了就能静下来想
@@ -812,6 +894,37 @@ function thinkOpen(){
   }
   var clues=RT.clue||0;
   if (clues>0) labels.push('静下来再想想（用 1 条线索确认一个办法，还剩 '+clues+' 条）');
+  /* 选项太多就分页 —— 手机上 9 个按钮会滚不动 */
+  if (labels.length > 6){
+    var pages=[];
+    for (var pi=0; pi<labels.length; pi+=5) pages.push([pi, Math.min(pi+5, labels.length)]);
+    var goPage = function(pg){
+      var sub=labels.slice(pages[pg][0], pages[pg][1]);
+      var last = (pg>=pages.length-1);
+      sub.push(last ? '（回到第一条）' : '（看后面的）');
+      ask('我在想，怎么才能出去。（'+(pg+1)+'/'+pages.length+'）', sub, function(k2){
+        if (k2 === sub.length-1){
+          if (last) thinkOpen(); else goPage(pg+1);
+          return;
+        }
+        var real = pages[pg][0] + k2;
+        if (real===meta.length){
+          var opts2=[], ids2=[];
+          for (var j2=0;j2<meta.length;j2++){ if (meta[j2][1]) continue; ids2.push(meta[j2][0]);
+            opts2.push(meta[j2][0]==='front'?'正门那条缝':(IDEAS[meta[j2][0]]?IDEAS[meta[j2][0]].n:meta[j2][0])); }
+          if (!ids2.length){ os('我：好像都想明白了。',3.0); return; }
+          ask('要确认哪一个？', opts2, function(k3){ if (ids2[k3]) verifyIdea(ids2[k3]); });
+          return;
+        }
+        if (!meta[real]) return;
+        var idp=meta[real][0];
+        if (idp && IDEAS[idp]) IDEAS[idp].run();
+      });
+    };
+    SFX.ui();
+    goPage(0);
+    return;
+  }
   SFX.ui();
   ask('我在想，怎么才能出去。', labels, function(k){
     if (k===meta.length){                       // "再想想"
@@ -896,32 +1009,36 @@ function teachGrid(fl){
   function blank(ch){ var a=[]; for(c=0;c<TCOLS;c++) a.push(ch); return a; }
   g.push(blank('#').join(''));
   for(r=1;r<=14;r++){
-    s=blank('.'); s[0]='#'; s[5]='#'; s[54]='#'; s[TCOLS-1]='#';
-    for(c=1;c<=4;c++) s[c]='B';
-    for(c=55;c<=58;c++) s[c]='G';
+    s=blank('.'); s[0]='#'; s[5]='#'; s[52]='#'; s[55]='#'; s[TCOLS-1]='#';
+    for(c=1;c<=4;c++) s[c]='B';              // 男厕（西端，全高）
+    for(c=53;c<=54;c++) s[c]='G';            // 女厕：挪到 53-54，不再压在连廊口下面
+    for(c=56;c<=61;c++) s[c]='.';            // 连廊大厅：贯通南北的 6 格大走廊
     for(k=0;k<ROOMS.length;k++){ room=ROOMS[k]; s[room[0]-1]='#'; s[room[1]+1]='#';
       for(c=room[0];c<=room[1];c++){ off=c-room[0];
         s[c]=(r===1)?((off===Math.floor((room[1]-room[0])/2))?'T':'.'):((off%2===0)?'d':'.'); } }
     g.push(s.join(''));
   }
   var row=g[SEATR].split(''); row[SEATC]='P'; g[SEATR]=row.join('');
-  s=blank('#'); for(k=0;k<RDOOR.length;k++) s[RDOOR[k]]='='; s[3]='='; s[57]='='; g.push(s.join(''));
+  s=blank('#'); for(k=0;k<RDOOR.length;k++) s[RDOOR[k]]='='; s[3]='='; s[54]='='; s[58]='='; g.push(s.join(''));
   for(r=16;r<=24;r++){ s=blank('.'); s[0]='#'; s[TCOLS-1]='#'; g.push(s.join('')); }
-  for(r=17;r<=23;r++){ var a=g[r].split(''); a[56]='S'; a[57]='S'; a[58]='S'; g[r]=a.join(''); }
+  for(r=17;r<=23;r++){ var a=g[r].split(''); a[57]='S'; a[58]='S'; a[59]='S'; g[r]=a.join(''); }
   /* 四楼：北墙东端开连廊口（实验楼在正北）。
      第 0 行是北墙，第 20/21 行是南边走廊 —— 原来把口开在南边，方向是反的。 */
-  if (fl>=1&&fl<=4){ var al=g[0].split(''); for(var ax=55;ax<=57;ax++) al[ax]='L'; g[0]=al.join(''); }   // 1–4 层都有，3 格宽
+  if (fl>=1&&fl<=4){ var al=g[0].split(''); for(var ax=57;ax<=60;ax++) al[ax]='L'; g[0]=al.join(''); }   // 开在东端连廊大厅上，4 格宽
   if (fl===1){ s=blank('#'); s[28]='O'; s[29]='O'; s[30]='O'; g.push(s.join('')); } else g.push(blank('#').join(''));
   return g;
 }
 function genGrid(nRoom,rw,rows,opt){
   opt=opt||{};
   var corr=opt.corr||0;                       // 多出来的走廊行数
-  var cols=2+nRoom*rw+(nRoom-1), g=[], r, c, s, k, base=1, H1=rows-7-corr;
+  var hallW=opt.hall||0;                      // 东端连廊大厅的宽度（0 = 不要）
+  var cols=2+nRoom*rw+(nRoom-1)+hallW, g=[], r, c, s, k, base=1, H1=rows-7-corr;
   function blank(ch){ var a=[]; for(c=0;c<cols;c++) a.push(ch); return a; }
   g.push(blank('#').join(''));
   for(r=1;r<=H1;r++){
     s=blank('.'); s[0]='#'; s[cols-1]='#';
+    /* 东端大厅：所有行的这几列都留空，成为一条贯通南北的大走廊 */
+    if (hallW) for(c=cols-1-hallW;c<=cols-2;c++) s[c]='.';
     for(k=0;k<nRoom;k++){ var c0=base+k*(rw+1), c1=c0+rw-1; s[c0-1]='#'; s[c1+1]='#';
       for(c=c0;c<=c1;c++){ var off=c-c0;
         var edge=(off===0||off===rw-1);
@@ -937,7 +1054,7 @@ function genGrid(nRoom,rw,rows,opt){
   s=blank('#'); for(k=0;k<nRoom;k++){ var d0=base+k*(rw+1); s[d0+Math.floor(rw/2)]='='; } g.push(s.join(''));
   for(r=H1+2;r<=rows-2;r++){ s=blank('.'); s[0]='#'; s[cols-1]='#'; g.push(s.join('')); }
   var sr=H1+3;
-  for(r=sr;r<=sr+1&&r<=rows-2;r++){ var a=g[r].split(''); a[cols-3]='S'; a[cols-2]='S'; g[r]=a.join(''); }
+  for(r=sr;r<=sr+1&&r<=rows-2;r++){ var a=g[r].split(''); a[cols-2-hallW]='S'; a[cols-3-hallW]='S'; g[r]=a.join(''); }
   /* 连廊口挪到所有行 push 完之后再写（见下面），这里什么都不做 */
   if (opt.exit==='west'){ var ae=g[rows-3].split(''); ae[0]='O'; g[rows-3]=ae.join(''); }
   else { s=blank('#'); var ec=Math.floor(cols/2); s[ec]='O'; s[ec+1]='O'; g.push(s.join('')); }
@@ -1018,11 +1135,12 @@ function genRoof(){
   return g;
 }
 function genLab(fl, furn, name, linkL, linkM){
-  var cols=46, rows=20, g=[], r, c, s, k, room, off, H1=rows-10;   // 走廊加宽到 6 行
+  var cols=50, rows=20, g=[], r, c, s, k, room, off, H1=rows-10;   // 走廊加宽到 6 行，东端 4 格给连廊大厅
   function blank(ch){ var a=[]; for(c=0;c<cols;c++) a.push(ch); return a; }
   g.push(blank('#').join(''));
   for(r=1;r<=H1;r++){
     s=blank('.'); s[0]='#'; s[cols-1]='#';
+    for(c=46;c<=48;c++) s[c]='.';                 // 东端连廊大厅（46–48），贯通南北
     for(k=0;k<5;k++){
       room=[2+k*9, 8+k*9];
       s[room[0]-1]='#'; s[room[1]+1]='#';
@@ -1037,17 +1155,18 @@ function genLab(fl, furn, name, linkL, linkM){
     }
     g.push(s.join(''));
   }
-  s=blank('#'); for(k=0;k<5;k++) s[4+k*9]='='; s[45]='='; g.push(s.join(''));
+  s=blank('#'); for(k=0;k<5;k++) s[4+k*9]='='; s[46]='='; s[47]='='; g.push(s.join(''));
   // 先把走廊和最后两行都推到 g 里，再往上面放楼梯和连廊口
   for(r=H1+2;r<=rows-2;r++){ s=blank('.'); s[0]='#'; s[cols-1]='#'; g.push(s.join('')); }
   if (fl===1){ s=blank('#'); s[22]='O'; s[23]='O'; s[24]='O'; g.push(s.join('')); }
   else g.push(blank('#').join(''));
   while (g.length < rows) g.push(blank('#').join(''));
-  for(r=H1+2;r<=rows-2;r++){ var a2=g[r].split(''); a2[41]='S'; a2[42]='S'; g[r]=a2.join(''); }
+  for(r=H1+2;r<=rows-2;r++){ var a2=g[r].split(''); a2[42]='S'; a2[43]='S'; g[r]=a2.join(''); }
   /* 连廊口：北墙（第 0 行）通行政楼，南墙（最后一行）通教学楼。两处都在东端。 */
   /* 连廊口统一 3 格宽（原来 1 格 = 9 世界单位，玩家碰撞直径就 10 多，等于侧身挤过去） */
-  if (linkM){ var a4=g[0].split(''); for(var mw=-1;mw<=1;mw++) a4[linkM[0]+mw]='M'; g[0]=a4.join(''); }
-  if (linkL){ var a3=g[rows-1].split(''); for(var lw=-1;lw<=1;lw++) a3[linkL[0]+lw]='L'; g[rows-1]=a3.join(''); }
+  /* 连廊口统一开在东端大厅正中（宽 4 格），而不是挤在教室角落 */
+  if (linkM){ var a4=g[0].split(''); for(var mw=0;mw<=2;mw++) a4[46+mw]='M'; g[0]=a4.join(''); }
+  if (linkL){ var a3=g[rows-1].split(''); for(var lw=0;lw<=2;lw++) a3[46+lw]='L'; g[rows-1]=a3.join(''); }
   if (fl===1){ s=blank('#'); s[22]='O'; s[23]='O'; s[24]='O'; g.push(s.join('')); }
   else g.push(blank('#').join(''));
   return g;
@@ -1061,18 +1180,21 @@ function buildAll(){
   var f;
   for(f=1;f<=5;f++) mkFloor('teach'+f,'教学楼 '+f+'F','teach',f,teachGrid(f),TCOLS,TROWS,ROOMS);
   mkFloor('teach6','教学楼 天台','teach',6,genRoof(),30,18,null);
-  for(f=1;f<=5;f++){ var gA=genGrid(6,7,22,{furn:'f', corr:3, linkM:f<=4?[46,21]:null});   // 走廊 6 行；南墙东端，1–4 层
+  for(f=1;f<=5;f++){ var gA=genGrid(6,7,22,{furn:'f', corr:3, hall:4, linkM:f<=4?[48,21]:null});   // 走廊 6 行；南墙东端，1–4 层
     if (f===3){ var rA=gA[4].split(''); rA[22]='D'; gA[4]=rA.join(''); }
-    mkFloor('admin'+f,'行政楼 '+f+'F','admin',f,gA,2+6*7+5,22,roomSpan(6,7)); }
+    mkFloor('admin'+f,'行政楼 '+f+'F','admin',f,gA,2+6*7+5+4,22,roomSpan(6,7)); }
   var LABKIND=['','物理实验室','化学实验室','计算机教室','地理教室','音乐教室'];
-  var LABFURN={ phys:'q', chem:'w', comp:'n', geo:'x', music:'p' };
+  /* 每层实验室的主要家具。
+   原来化学实验室给的是 'w'（盥洗盆）—— 化学教室里摆一排洗手池本来就不对，
+   而且 'w' 不是实验台也没法做实验。现在换成 'l'（实验台）。 */
+var LABFURN={ phys:'q', chem:'l', comp:'n', geo:'x', music:'p' };
   for(f=1;f<=5;f++){
     var gL=genLab(f, LABFURN[['','phys','chem','comp','geo','music'][f]], LABKIND[f],
                    f<=4?[44,0]:null, f<=4?[44,0]:null);
     /* 计算机教室：中间那间放一台教师机（D），破解白名单就靠它 */
     if (f===3){ var rD=gL[2].split(''); rD[23]='D'; gL[2]=rD.join(''); }
     /* 音乐教室：钢琴本身可交互（p），已经在 genLab 里摆好 */
-    mkFloor('lab'+f,'实验楼 '+f+'F · '+LABKIND[f],'lab',f,gL,2+5*8+4,20,roomSpan(5,8));
+    mkFloor('lab'+f,'实验楼 '+f+'F · '+LABKIND[f],'lab',f,gL,2+5*8+4+4,20,roomSpan(5,8));
   }
   mkFloor('canteen1','食堂 1F','canteen',1,genCanteen(),62,28,null);
   mkFloor('dorm1','宿舍 1F','dormN',1,genDorm(1),44,16,null);
@@ -1087,7 +1209,7 @@ function buildAll(){
   INTERIORS['guard1']={ name:'保安岗', host:'guard', floor:1, rooms:null,
     grid:['######','#..O..','#..O..','#....#','#..T.#','#....#','#..S.#','######'], cols:6, rows:8, tw:TTILE, th:TTILE };
   INTERIORS['gear1']={ name:'体育器材室', host:'gear', floor:1, rooms:null,
-    grid:['#######','#..R..#','#.R.R.#','#..R.#','#.....O','#######'], cols:7, rows:6, tw:TTILE, th:TTILE };
+    grid:['#######','#..R..#','#.R.R.#','#..R..#','#.....O','#######'], cols:7, rows:6, tw:TTILE, th:TTILE };
   for (var i in INTERIORS) INTERIORS[i].baked=false;
 }
 
@@ -1542,7 +1664,11 @@ function solidIndoor(R,x,y,r){
   return !!(SOLIDCH[c1]||SOLIDCH[c2]||SOLIDCH[c3]||SOLIDCH[c4]);
 }
 /* E 在附近交互，不必穿进 SOLIDCH 家具格。只搜索相邻格且避免隔墙交互。 */
-var INTERACT_SOLID={ c:1,D:1,R:1,X:1,p:1,n:1,b:1 };
+/* 能"隔着站过去按 E"的家具。只有列在这里的字符，nearbyFurniture 才会返回。
+   原来只有 7 个 —— 柜子、实验台、课桌、器材、陈列架、地球仪、盥洗盆全被静默过滤，
+   表现就是"摆了一堆东西但按 E 毫无反应"。加字符之前先确认 tryInteract 里有对应分支。 */
+var INTERACT_SOLID={ c:1,D:1,R:1,X:1,p:1,n:1,b:1,
+                     f:1,l:1,d:1,t:1,v:1,q:1,w:1,x:1 };
 function nearbyFurniture(R, allowed){
   if (!R) return null;
   var cx=Math.floor((S.x-R.ox)/R.tw), cy=Math.floor((S.y-R.oy)/R.th);
@@ -1576,7 +1702,10 @@ function doorOf(o){ if(!o) return null;
     case 'garw': return [o.x+o.w, o.y+o.h*0.5, 1, 0];
     case 'trash': return [o.x+o.w*0.5, o.y+o.h, 0, 1];
     case 'canteen': return [o.x, o.y+o.h*0.5, -1, 0];
-    case 'dormN': case 'dormS': return [o.x+o.w*0.24, o.y, 0, -1];
+    /* 两个宿舍门朝向不同：北门在北侧，南门在南侧。
+       原来两个都返回上边缘 —— 从南门进去再出来，人会出现在北门那边，等于"哪儿进都一个地方出"。 */
+    case 'dormN': return [o.x+o.w*0.24, o.y, 0, -1];
+    case 'dormS': return [o.x+o.w*0.24, o.y+o.h, 0, 1];
   }
   return null; }
 function atGate(){ var t=30*SC;
@@ -1688,8 +1817,13 @@ function anKill(msg){
     S.immuneUsed=1; anEnd(); os('我：不知为什么，这次异象避开了我。',4.0); return;
   }
   DEADSEQ.autoKind = DFX_MAP[AN.cur] || 'vignette';
-  if (isDay1()){ S.san=Math.max(0,S.san-26); anEnd();
-    os('我：刚才那一下……我差点没喘上来。',4.4); return; }
+  /* 第一天的"不致命"保护只给预知梦。梦魇从第一天起就会死人。 */
+  if (isDay1() && S.diff!=='hard'){ S.san=Math.max(0,S.san-26); anEnd();
+    os('我：刚才那一下……我差点没喘上来。',4.4);
+  if (S.talentName){
+    setTimeout(function(){ os('我：我叫得出名字的东西不多，但我知道自己是什么样的人。',5.0); },3600);
+    setTimeout(function(){ os('我：——'+S.talentName+'。'+(S.talentText||''),5.6); },7600);
+  } return; }
   kill(msg);
 }
 var AN={ cur:null, t:0, next:12, rainT:0, eye:0, freeze:0, moth:0, rained:0,
@@ -1697,9 +1831,25 @@ var AN={ cur:null, t:0, next:12, rainT:0, eye:0, freeze:0, moth:0, rained:0,
          eat:0, ne:0, loop:0, loopT:0, loopInv:0, leak:0, spots:[], leakT:0, roster:0, shadow:0,
          rite:0, riteX:0, riteY:0, riteT:0, cold:0, shift:0 };
 var AN_ID=['rain','moth','turn','broad','bell13','exercise','bells','hand','repeat','chalk',
-           'feast','necker','loop','leak','roster','shadow','rite','cold','raindots','shifting'];
-var AN_SMALL={ turn:1, broad:1, bell13:1, hand:1, repeat:1, chalk:1, loop:1, roster:1, leak:1, rite:1, cold:1, shifting:1 };
-var AN_BIG={ rain:1, moth:1, exercise:1, bells:1, feast:1, necker:1, shadow:1, raindots:1 };
+           'feast','necker','loop','leak','roster','shadow','rite','cold','raindots','shifting',
+           /* 设计清单 E8 / E21 / E22 */
+           'stare','twin','lamps'];
+/* 每条异象的相对权重。默认 1。
+   chalk / roster / leak 是"哪儿都能发生"的，如果不压权重，
+   它们会占掉一大半（实测放开地点限制后 chalk+roster 到了 61%）。 */
+var AN_W={ chalk:0.42, roster:0.42, leak:0.55, broad:0.75, bell13:0.85,
+           shifting:0.9, repeat:0.9, rite:0.85, cold:0.9, hand:0.9,
+           loop:1.0, turn:0.5, stare:0.95, twin:0.55, lamps:0.9,
+           /* 大异象整体压低 —— 跨时段采样时它们一度占 80% */
+           feast:0.50, rain:0.50, moth:0.55, necker:0.70,
+           shadow:0.80, bells:0.75, exercise:0.85, raindots:0.45 };
+function anWeight(id){ return AN_W[id] === undefined ? 1 : AN_W[id]; }
+/* E8 全体回头：教室里所有同学同时转头看你。不能停下来 —— 站着不动就出事。 */
+/* E21 天台的第二个你：背对你，穿得和你一样。别靠近，别喊。 */
+/* E22 熄灯后的走廊灯：走廊灯一盏盏亮起来跟着你。站在灯亮的那格别动，等它过去。 */
+var AN_SMALL={ turn:1, broad:1, bell13:1, hand:1, repeat:1, chalk:1, loop:1, roster:1, leak:1, rite:1, cold:1, shifting:1,
+                stare:1, lamps:1 };
+var AN_BIG={ rain:1, moth:1, exercise:1, bells:1, feast:1, necker:1, shadow:1, raindots:1, twin:1 };
 /* 第一天能出现的：都不致命、也不打断上课。用户点名要 broadcast(广播点名) 和 turn(被拍肩膀) 也在。 */
 var AN_DAY1={ rain:1, moth:1, shifting:1, raindots:1, cold:1, chalk:1, repeat:1, broad:1, turn:1 };
 /* 几个常用的位置判断：异象必须发生在说得通的地方 */
@@ -1721,21 +1871,26 @@ function inClassroomHere(){
   var ty=Math.floor((S.y-R.oy)/R.th);
   return ty>=1 && ty<=15;
 }
+/* 是不是吃饭的时间（午饭 / 午休 / 晚饭） */
+function inMeal(){
+  var i=periodAt(S.tsec/60);
+  if (i<0) return false;
+  var n=SCHED[i][2];
+  return n==='午饭' || n==='午休' || n==='晚饭';
+}
 function pickAnomaly(){
   if (DEV.on && DEV.noAnomaly) return null;
   if (FN.on) return 'fn';        // 假正常期间，所有异象都换成"看起来很正常"的事件
   /* 第一天不致命，但**地点判定一样要过** —— 原来是硬编码两支直接返回，
      所以室外出"窗外的楼在动"、走廊出"后桌的人问作业"，非常出戏。
      现在改成：先按地点筛出 pool，再用 AN_DAY1 取交集。 */
-  var day1 = isDay1() && !DEV.allAn;
+  var day1 = isDay1() && S.diff!=='hard' && !DEV.allAn;   // 梦魇第一天不缩池
   var inClass=(needWhere(S.tsec)==='教室');
   var pool=[], i, id;
   for(i=0;i<AN_ID.length;i++){
     id=AN_ID[i];
     /* ---- 地点判定：每一条都要在"会发生这件事"的地方才允许出现 ---- */
-    if (id==='turn'){                                      // 被拍肩膀：得有人在你后面
-      if (!inClassroomHere()) continue;
-    }
+    /* 被拍肩膀：任何地方都可能 —— 走廊、操场、楼梯间都行，不限于教室 */
     if (id==='broad'){                                     // 广播点名：室内听得清
       if (S.mode!=='in') continue;
     }
@@ -1750,7 +1905,7 @@ function pickAnomaly(){
     /* chalk 不限地点 —— 它写在你身边任何能写字的东西上，载体由 chalkSurface() 决定 */
     if (id==='repeat'){                                    // 后桌问话：你得在座位上或课桌旁
       if (!inClassroomHere()) continue;
-      if (RT.hwGiven) continue;                            // 作业已经交出去了，它不会再来
+      if (RT.hwGiven===dayNo()) continue;                  // 交过了，但只管当天 —— 第二天它还会问
     }
     if (id==='moth' && !AN.rained) continue;               // 蛾群要等雨
     if (id==='exercise'){                                  // 操场做操：你就在操场附近
@@ -1759,8 +1914,29 @@ function pickAnomaly(){
     if (id==='bells'){                                     // 车棚齐鸣：你在车棚附近
       if (S.mode!=='out' || !nearXY(590,292,180)) continue;
     }
+    if (id==='stare'){                                     // 全体回头：得有"全班"在
+      if (!inClassroomHere()) continue;
+    }
+    if (id==='twin'){                                      // 天台的第二个你：只有天台
+      if (S.room!=='teach6') continue;
+      /* 天台上那个半透明的人形一直站在那儿（见 drawInterior 的 teach6 分支）。
+         twin 异象指的就是他 —— 所以位置固定在同一个点上，不要随机。 */
+      var _tR=INTERIORS['teach6'];
+      if (_tR) AN.origin={ x:_tR.ox+_tR.w*0.76, y:_tR.oy+_tR.h*0.40 };
+      AN.twinFixed=1;
+    }
+    if (id==='lamps'){                                     // 熄灯后的走廊灯：夜里 + 走廊
+      if (!isNight()) continue;
+      if (S.mode!=='in') continue;
+      var _lr=INTERIORS[S.room];
+      if (!_lr) continue;
+      var _lty=Math.floor((S.y-_lr.oy)/_lr.th);
+      if (!(_lty>=16 && _lty<=24)) continue;                // 走廊那一条
+    }
     if (id==='rain' && S.mode==='in' && inClass) continue;
-    if (id==='feast'){ if (!(S.mode==='in'&&S.room==='canteen1')) continue; }
+    /* 食堂盛宴：只在饭点出现，而且不需要你在食堂里 —— 到点自己就来了。
+       过了饭点它自己消失（见 anUpdate）。 */
+    if (id==='feast'){ if (!inMeal()) continue; }
     if (id==='necker'){                                    // 围墙外的行人：你得看得到围墙
       if (S.mode!=='out' || S.x < 640*SC) continue;
     }
@@ -1783,10 +1959,31 @@ function pickAnomaly(){
   if (want){
     var pref=[];
     for(i=0;i<pool.length;i++) if (want[pool[i]]) pref.push(pool[i]);
-    if (pref.length && Math.random()<0.8) pool=pref;
+    /* 偏好池不能太小 —— 否则"上课偏好小异象"在操场上只会剩下 chalk / roster 两个，
+       实测那样会让这两条各占 40% 以上。至少要 3 个候选才启用偏好。 */
+    /* 上课偏好小异象、自由时间偏好大异象，但都别太绝对 ——
+       原来是 0.8，自由时间里小异象只剩 8.7%。现在上课 0.8、自由 0.55。 */
+    var prefP = inClass ? 0.8 : 0.55;
+    if (pref.length >= 3 && Math.random()<prefP) pool=pref;
   }
-  if (day1) pool = pool.filter(function(x){ return AN_DAY1[x]; });   // 第一天只留温和的
-  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+  /* 实验楼是"不正常"最集中的地方 —— 玩家反馈这里的异象太少。
+     在实验楼里，每条异象的权重乘 1.9；在计算机/化学教室再额外乘 1.3。 */
+  var labBoost = 1;
+  if (S.mode==='in' && S.room && S.room.indexOf('lab')===0) labBoost = 1.9;
+  if (day1) pool = pool.filter(function(x){ return AN_DAY1[x]; });   // 第一天（预知梦）只留温和的
+  if (!pool.length) return null;
+  /* 按权重抽：小异象整体略加权（用户要求小异象多一点），
+     再乘上每条的个体权重（压住那些"哪儿都能出"的） */
+  var wsum=0, wi;
+  for (wi=0; wi<pool.length; wi++){
+    wsum += anWeight(pool[wi]) * (AN_SMALL[pool[wi]] ? 1.25 : 1.0) * labBoost;
+  }
+  var r=Math.random()*wsum, acc=0;
+  for (wi=0; wi<pool.length; wi++){
+    acc += anWeight(pool[wi]) * (AN_SMALL[pool[wi]] ? 1.25 : 1.0) * labBoost;
+    if (r<acc) return pool[wi];
+  }
+  return pool[pool.length-1];
 }
 /* ============================ 「下一次」的载体 ============================
    这个异象的本质是"有什么东西把下一次的时间写下来了"，
@@ -1875,8 +2072,11 @@ var ANA_TEXT={
   moth:    '蛾 ▓ 怕 ▓ 屋 ▓。',
   shifting:'楼 ▓ 动的 ▓ 候，看 ▓ 楼。它 ▓ 动。',
   chalk:   '有 ▓ 西会把 ▓ 时间 ▓ 下来。看 ▓ 它。',
-  raindots:'雨 ▓ 排成 ▓ 的 ▓ 候，明 ▓ 是 ▓。'
-};
+  raindots:'雨 ▓ 排成 ▓ 的 ▓ 候，明 ▓ 是 ▓。',
+   stare:   '全 ▓ 同时回头 ▓ 你。别 ▓ 下。走 ▓ 就 ▓ 事。',
+   twin:    '天 ▓ 上站 ▓ 一个 ▓。别 ▓ 去，也 ▓ 喊。',
+   lamps:   '熄 ▓ 之后 ▓ 会 ▓ 你。站 ▓ 灯 ▓ ▓ 别 ▓。'
+  };
 function anaAllowed(){
   return S.screen==='play' && S.diff==='easy' && !S.dead && !S.death && !RT.end;
 }
@@ -1897,13 +2097,13 @@ function anaTick(dt){
   ANA.t+=dt;
   if (ANA.on && ANA.read>0){
     ANA.fade+=dt;
-    if (ANA.fade>2.4){ ANA.on=false; ANA.read=0; ANA.next = 3 + Math.random()*4; }   // 淡出后要等下一轮，别立刻又刷一条
+    if (ANA.fade>2.4){ ANA.on=false; ANA.read=0; ANA.next = 1.1 + Math.random()*1.5; }   // 淡出后要等下一轮，别立刻又刷一条
     return;
   }
   ANA.next -= dt*rateAt(S.tsec)/60;
   if (!ANA.on && ANA.next<=0){
     anaSpawn();
-    ANA.next = 3 + Math.random()*4;
+    ANA.next = 1.1 + Math.random()*1.5;      // 原来 3–7 分钟才一条，太稀
   }
 }
 function anaNear(){
@@ -2108,7 +2308,7 @@ function anStart(forceId){
     }
   }
   if (id==='rain'){ AN.rainT=900; SFX.rainOn(); AN.rained=1; os('我：天怎么一下就黑了……这雨不对劲。',4.6); }
-  else if (id==='moth'){ AN.moth=12; AN.rained=0; os('我：墙上在掉粉。是蛾子。',4.6); }
+  else if (id==='moth'){ AN.moth=12; AN.rained=0; AN.mothAcc=0; os('我：墙上在掉粉。是蛾子。',4.6); }
   else if (id==='turn'){ AN.eye=0; AN.stage=0; AN.stageT=0; AN.look=0;
     os('我：有人拍我肩膀。',3.0); }
   else if (id==='broad'){ AN.freeze=4; os('我：广播在念名单……念到我们班了。',4.6);
@@ -2137,7 +2337,18 @@ function anStart(forceId){
   }
   else if (id==='hand'){ AN.hand=12; os('我：隔间底下伸过来一只手。',4.2); }
   else if (id==='repeat'){ os('我：后排那个同学又在说同一句话。',4.2); }
-  else if (id==='feast'){ AN.eat=0; os('我：食堂灯全亮了……还有一股香味。好香啊……',5.0); }
+  else if (id==='stare'){ AN.stare=0; AN.stareMove=0; AN.eye=0;
+    os('我：后排有人回头了。然后前排也回。',4.4);
+    setTimeout(function(){ if(AN.cur==='stare') os('我：他们看得很整齐。',4.0); },2200); }
+  else if (id==='twin'){ AN.twinD=999;
+    /* 位置在 pickAnomaly 里已经按天台上那个人形定死了（AN.twinFixed） */
+    os('我：天台上有个人，背对着我。',4.4);
+    setTimeout(function(){ if(AN.cur==='twin') os('我：他穿的校服……和我一样。',4.4); },2600); }
+  else if (id==='lamps'){ AN.lampP=0; AN.lampT=0;
+    os('我：走廊的灯一盏一盏亮起来了。',4.4);
+    setTimeout(function(){ if(AN.cur==='lamps') os('我：它在找我。站在灯底下别动。',4.6); },2600); }
+  else if (id==='feast'){ AN.eat=0; os('我：食堂那边……灯全亮了。有一股香味飘过来。',5.4);
+    setTimeout(function(){ if(AN.cur==='feast') os('我：好香啊。明明离得这么远。',4.6); },2800); }
   else if (id==='necker'){ AN.ne=18; os('我：围墙外面站着一个人。他背对着我。',5.0); }
   else if (id==='loop'){ AN.loop=14; AN.loopT=1.6; AN.loopInv=0; os('我：这条走廊……我好像走过一遍了。',4.6); }
   else if (id==='leak'){ AN.leak=16; AN.leakT=0; AN.spots=[];
@@ -2168,27 +2379,79 @@ function anStart(forceId){
   else if (id==='raindots'){ os('我：雨点落在地上，排成字了。',4.6); }
 }
 function anEnd(){
-  if (AN.cur==='rain') SFX.rainOff();
+  if (AN.cur==='rain'){ SFX.rainOff(); S.wetAcc=0; }      // ★ 雨停了淋雨值必须清零
+                                                            //   否则攒到 5.9 秒后，下一场雨 0.1 秒就死
+  AN.lastBig = !!(AN_SMALL[AN.cur]===undefined);   // 记下这次是不是大异象（anEnd 里没有 id）
   AN.cur=null; AN.t=0; AN.asked=0;
   /* 间隔从 14–28 秒压到 7–15 秒：原来的节奏太稀，一节课可能什么都碰不到 */
-  AN.next=(7+Math.random()*8)*(1+S.viol/110)*(1+(100-S.san)/200)*dif().iv;
+  /* 原来 7–15 秒一条；现在整体再压一档，而且小异象会额外加权。
+     用户反馈"小异象发生太少了"。 */
+  var smallBias = 1;
+  if (AN.lastBig) smallBias = 0.62;          // 上一条是大异象 → 下一条更快
+  AN.next=(5.2+Math.random()*5.6)*(1+S.viol/110)*(1+(100-S.san)/200)*dif().iv*smallBias;
 }
 function anUpdate(dt){
   if (S.dead||S.death) return;
   var SD=dif().san;
   AN.t+=dt;
-  anaTick(dt); fnTick(dt); fnEndTick(dt); tutTick(dt); ambUpdate(dt);
+  anaTick(dt); fnTick(dt); fnEndTick(dt); ambUpdate(dt); buffTick(dt); coolTick(dt);
+  if (AN.cur!=='rain' && S.wetAcc>0) S.wetAcc=Math.max(0, S.wetAcc-dt*1.2);   // 不在雨里就慢慢干
   if (!AN.cur){ AN.next -= dt*rateAt(S.tsec)/60 * (S.talent==='crowd' && inClassroomHere() && needWhere(S.tsec)==='教室'?0.55:1); if (AN.next<=0) anStart(); return; }   // 首次等待
   var a=AN.cur, i;
   if (a==='fn'){ if (AN.t>13 && !AN.asked) anEnd(); if (AN.t>16) anEnd(); return; }
   if (a==='rain'){ AN.rainT-=dt*rateAt(S.tsec);
-    if (!sheltered()) S.wetAcc+=dt; else S.wetAcc=Math.max(0,S.wetAcc-dt*0.6);
+    /* 淋雨值只在室外累积，而且涨得慢一点（原来 6 秒就死，太快） */
+    if (!sheltered()) S.wetAcc+=dt*0.62; else S.wetAcc=Math.max(0,S.wetAcc-dt*0.6);
     S.san-=dt*SD*0.9;
     if (S.wetAcc>6) anKill('你在雨里窒息了。');
     if (AN.rainT<=0){ anEnd(); os('我：雨小了。',3.0); } }
   else if (a==='moth'){ AN.moth-=dt*rateAt(S.tsec)/8;
-    if (!sheltered()){ S.san-=dt*SD*2.2; if (AN.t>7) anKill('蛾子把你裹住了。'); } else S.san-=dt*SD*0.35;
+    /* 蛾群是从某个地方涌出来的 —— 离远点就没事（原来只要在室外，7 秒必死）。
+       120 单位以内才危险，跑出去累积值会回落。 */
+    var mox = AN.origin ? AN.origin.x : S.x, moy = AN.origin ? AN.origin.y : S.y;
+    var mdx = S.x-mox, mdy = S.y-moy, md2 = mdx*mdx+mdy*mdy;
+    if (md2 < (120*SC)*(120*SC)){
+      S.san -= dt*SD*2.2;
+      AN.mothAcc = (AN.mothAcc||0) + dt;
+      if (AN.mothAcc>5.5) anKill('蛾子把你裹住了。');
+    } else if (!sheltered()){
+      S.san -= dt*SD*0.5;
+      AN.mothAcc = Math.max(0, (AN.mothAcc||0) - dt*1.4);      // 跑开就化解
+    } else {
+      S.san -= dt*SD*0.2;
+      AN.mothAcc = Math.max(0, (AN.mothAcc||0) - dt*2.0);      // 进室内更快化解
+    }
     if (AN.moth<=0) anEnd(); }
+  else if (a==='stare'){
+    /* 全体回头：站着不动就出事。走动（尤其背对着走开）就安全。 */
+    var spd2 = (S.moving && !S.seated) ? 1 : 0;
+    if (spd2) { AN.stareMove += dt; AN.stare = Math.max(0, AN.stare-dt*0.9); }
+    else { AN.stare += dt; AN.stareMove = Math.max(0, AN.stareMove-dt); }
+    S.san -= dt*SD*(S.seated?0.15:0.55);
+    if (AN.stare>2.6) anKill('你站住了。全班都看着你，你却没动。');
+    if (AN.t>8) anEnd();
+  }
+  else if (a==='twin'){
+    /* 天台的第二个你。靠近会出事，远远看着它自己会走。 */
+    var tx3=AN.origin?AN.origin.x:S.x, ty3=AN.origin?AN.origin.y:S.y;
+    AN.twinD = Math.sqrt((S.x-tx3)*(S.x-tx3)+(S.y-ty3)*(S.y-ty3));
+    if (AN.twinD < 34){ anKill('你走过去碰了他。他转过来的时候，你正在转过去。'); }
+    else if (AN.twinD < 90){ S.san -= dt*SD*1.2; }
+    if (AN.t>9){ anEnd(); RT.clue=(RT.clue||0)+1;
+      os('我：他往前迈了一步，就不见了。',4.2);
+      setTimeout(function(){ os('我：他站过的地方，地上有粉笔灰。',4.4); },2400); }
+  }
+  else if (a==='lamps'){
+    /* 熄灯后的走廊灯：一排灯顺着走廊逼过来。移动 = 被照到。 */
+    AN.lampT += dt;
+    var R2=INTERIORS[S.room];
+    var lty2 = R2 ? Math.floor((S.y-R2.oy)/R2.th) : 20;
+    var wasMoving = !!S.moving;
+    if (wasMoving){ S.san -= dt*SD*1.6; AN.lampP += dt*0.9; }
+    else { AN.lampP = Math.max(0, AN.lampP - dt*0.55); }
+    if (AN.lampP > 2.4) anKill('灯照到你了。你动的那一下，整条走廊都亮了。');
+    if (AN.t>10) anEnd();
+  }
   else if (a==='turn'){
     AN.stageT+=dt;
     if (AN.stage===0){
@@ -2287,7 +2550,7 @@ function anUpdate(dt){
         if (AN.cur!=='repeat') return;
         var giveUp = repOpts[k]==='把作业本递过去';
         var quiet  = repOpts[k]==='不出声，继续做自己的事';
-        if (giveUp){ anEnd(); S.san=Math.min(100,S.san+12); RT.hwGiven=1; useItem&&0;
+        if (giveUp){ anEnd(); S.san=Math.min(100,S.san+12); RT.hwGiven=dayNo(); useItem&&0;
           os('我：我把作业本往后递过去。',4.0);
           setTimeout(function(){ os('我：他接住了。翻页的声音很轻。然后后面就没有声音了。',6.0); },2400);
           return; }
@@ -2332,10 +2595,13 @@ function anUpdate(dt){
     }
     if (AN.t>18 && AN.cur==='repeat') anEnd(); }
   else if (a==='feast'){
+    /* 在食堂里才「吃」，吃太久就出事；不在食堂只是被香味勾着，SAN 慢慢掉。
+       过了饭点它自己就散了 —— 这才是「不用靠近也会触发、过了餐点才消失」。 */
     if (S.mode==='in'&&S.room==='canteen1'){ AN.eat+=dt; S.san-=dt*SD*0.9;
       if (AN.eat>(S.talent==='stomach'?17:9)) anKill('你把那盘饭吃了。'); }
-    else AN.eat=Math.max(0,AN.eat-dt*0.5);
-    if (AN.t>26) anEnd(); }
+    else { AN.eat=Math.max(0,AN.eat-dt*0.5); S.san-=dt*SD*0.45; }
+    if (!inMeal()){ anEnd(); os('我：……香味没了。饭点过了。',4.2); RT.clue=(RT.clue||0)+1; return; }
+    if (AN.t>90) anEnd(); }
   else if (a==='necker'){ AN.ne-=dt; S.san-=dt*SD*0.25;
     var nx2=706*SC+40, ny2=900*SC;
     var ndx=S.x-nx2, ndy=S.y-ny2, nd2=ndx*ndx+ndy*ndy;
@@ -2742,8 +3008,72 @@ var DFX={
     var g=ctx.createLinearGradient(0,0,0,h);
     g.addColorStop(0,'rgba(0,0,0,'+(k*0.5)+')'); g.addColorStop(1,'rgba(0,0,0,'+(k*0.5)+')');
     ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-  }
-};
+  },
+    /* E8 全体回头：一圈眼睛同时睁开，全部看向中心 */
+    stare:function(ctx,w,h,k,t){
+      var q=clamp(k,0,1), i;
+      ctx.save();
+      ctx.fillStyle='rgba(6,7,9,'+(0.5*q)+')'; ctx.fillRect(0,0,w,h);
+      var N=13, cx=w*0.5, cy=h*0.46, R=Math.min(w,h)*(0.20+q*0.30);
+      for(i=0;i<N;i++){
+        var a=-Math.PI/2 + i/N*Math.PI*2;
+        var ex=cx+Math.cos(a)*R, ey=cy+Math.sin(a)*R*0.72;
+        var er=(5+q*11)*(1+0.08*Math.sin(t*7+i));
+        ctx.fillStyle='rgba(226,230,234,'+(0.30+q*0.66)+')';
+        ctx.beginPath(); ctx.ellipse(ex,ey,er,er*0.66,0,0,6.2832); ctx.fill();
+        ctx.fillStyle='#08090b';
+        ctx.beginPath(); ctx.arc(ex,ey,er*0.42,0,6.2832); ctx.fill();
+      }
+      ctx.restore();
+    },
+    /* E21 天台的第二个你：远处一个背影，慢慢转过来 */
+    twin:function(ctx,w,h,k,t){
+      var q=clamp(k,0,1);
+      ctx.save();
+      var cx=w*0.5, base=h*0.80, sc=Math.min(w,h)*0.30*(0.7+q*0.6);
+      var turn=clamp((q-0.45)/0.5,0,1);
+      ctx.globalAlpha=0.25+q*0.75;
+      ctx.fillStyle='#0d0e10';
+      ctx.beginPath();
+      ctx.moveTo(cx-sc*0.30, base); ctx.lineTo(cx-sc*0.22, base-sc*1.35);
+      ctx.lineTo(cx+sc*0.22, base-sc*1.35); ctx.lineTo(cx+sc*0.30, base);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, base-sc*1.58, sc*0.26, 0, 6.2832); ctx.fill();
+      if (turn>0){
+        ctx.strokeStyle='rgba(232,236,240,'+(turn*0.85)+')';
+        ctx.lineWidth=Math.max(1,sc*0.035);
+        ctx.beginPath(); ctx.moveTo(cx-sc*0.12, base-sc*1.62); ctx.lineTo(cx+sc*0.12, base-sc*1.54); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx-sc*0.10, base-sc*1.66); ctx.lineTo(cx+sc*0.10, base-sc*1.66); ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+      ctx.fillStyle='rgba(0,0,0,'+(0.7*q)+')'; ctx.fillRect(0,0,w,h);
+      ctx.restore();
+    },
+    /* E22 熄灯后的走廊灯：一排灯扫过来，最后停在正中 */
+    lamps:function(ctx,w,h,k,t){
+      var q=clamp(k,0,1), i;
+      ctx.save();
+      ctx.fillStyle='rgba(4,5,7,'+(0.86*q)+')'; ctx.fillRect(0,0,w,h);
+      var N=7;
+      for(i=0;i<N;i++){
+        var ph=(t*0.75 + i*0.13)%1.0;
+        var lx=w*(0.06+0.88*(i/(N-1)));
+        var on=clamp(1-Math.abs(ph-0.5)*2.6,0,1);
+        if (i===Math.floor(N/2) && q>0.55) on=clamp((q-0.55)/0.35,0,1);
+        if (on<=0.01) continue;
+        var rad=Math.min(w,h)*(0.10+0.26*on)*(0.6+q*0.5);
+        var g=ctx.createRadialGradient(lx,h*0.34,0,lx,h*0.34,rad);
+        g.addColorStop(0,'rgba(246,240,214,'+(0.80*on)+')');
+        g.addColorStop(0.5,'rgba(228,214,168,'+(0.28*on)+')');
+        g.addColorStop(1,'rgba(228,214,168,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(lx,h*0.34,rad,0,6.2832); ctx.fill();
+        ctx.fillStyle='rgba(252,248,232,'+(0.9*on)+')';
+        ctx.beginPath(); ctx.ellipse(lx,h*0.18,rad*0.20,rad*0.07,0,0,6.2832); ctx.fill();
+      }
+      ctx.fillStyle='rgba(0,0,0,'+(0.55*q)+')'; ctx.fillRect(0,0,w,h);
+      ctx.restore();
+    },
+  };
 /* 死因 → 动画 */
 var DFX_MAP={
   'rain':'drown','moth':'swarm','turn':'gaze','broad':'voice','bell13':'bell',
@@ -2752,8 +3082,10 @@ var DFX_MAP={
   'viol':'grip','trap_out':'slit','trap_wall':'squeeze','trap_beg':'face','beast':'deep',
   /* 下面这几条本身不致命，但万一以后改了，也有对应的演出 */
   'repeat':'gaze','chalk':'vignette','loop':'vignette','roster':'vignette',
-  'cold':'freeze','raindots':'water','shifting':'gaze'
-};
+   'cold':'freeze','raindots':'water','shifting':'gaze',
+   /* 设计清单 E8 / E21 / E22 */
+   'stare':'stare','twin':'twin','lamps':'lamps'
+   };
 DFX.follow=function(ctx,w,h,k,t){        /* 做操：画面跟着一起转 */
   var q=k*k;
   ctx.save(); ctx.translate(w*0.5,h*0.5); ctx.rotate(Math.sin(q*9)*0.20*q);
@@ -2890,7 +3222,17 @@ addEventListener('keydown', function(e){
   if(PAUSE.on) return;
   if(DLG.open){ if(k>='1'&&k<='9') pickChoice(+k-1); return; }
   if(MAPV.on){ if(k==='m') mapToggle(); else if(k==='n') mapMark(); return; }
-  if(elInv.classList.contains('open')){ if(k==='b') toggleBag(); else if(k>='1'&&k<='8') { if(useItem(+k-1)) renderBag(); } return; }
+  if(elInv.classList.contains('open')){
+    /* 背包开着的时候：方向键 / WASD 换格子，1-8 直接用，G 丢掉选中的那一格 */
+    if (k==='b'||k==='escape') { toggleBag(); return; }
+    if (k==='arrowright'||k==='d'){ bagSel(Math.min(BAG_MAX-1, BAGSEL+1)); SFX.ui(); return; }
+    if (k==='arrowleft' ||k==='a'){ bagSel(Math.max(0, BAGSEL-1)); SFX.ui(); return; }
+    if (k==='arrowdown' ||k==='s'){ bagSel(Math.min(BAG_MAX-1, BAGSEL+4)); SFX.ui(); return; }
+    if (k==='arrowup'   ||k==='w'){ bagSel(Math.max(0, BAGSEL-4)); SFX.ui(); return; }
+    if (k==='g'){ throwSelected(); return; }
+    if (k>='1'&&k<='8'){ bagSel(+k-1); if(useItem(+k-1)) renderBag(); return; }
+    return;
+  }
   K[k]=true;
   if (k==='e') tryInteract(e.shiftKey);
   if (k==='b'){ TUT.sawB=true; toggleBag(); return; }
@@ -2901,8 +3243,12 @@ addEventListener('keydown', function(e){
   if (k==='n') return;
   if (k>='1' && k<='8'){ if (useItem(+k-1)) renderBag(); return; }
   if (k==='h'){ thinkOpen(); return; }
-  if (k==='g') throwItem();
-  if (k==='t') checkTime();
+  /* F：地上有东西就捡起来，没有就把背包里选中的那件放下。
+     "拿"和"放"是一个键，E 是"用" —— 两条线不再打架。 */
+  if (k==='f'){ tryPickup(); return; }
+  /* G：只丢背包里当前选中的那一格。原来是"丢第一件"，玩家根本不知道会丢什么。 */
+  if (k==='g'){ throwSelected(); return; }
+  /* T 查时间已去掉：顶部一直显示着 */
   if (k==='`'||k==='f2'||k==='insert'){ askDevPassword(); return; }
 });
 addEventListener('keyup', function(e){ K[e.key.toLowerCase()]=false; });
@@ -3057,6 +3403,8 @@ function resetGame(){
   actStop(false); pianoStop(); FN.on=false; FN.endT=-1; FN.endI=0; FN.v=0; FN.msg=0; FN.ended=false; FN.k=0; FN.used={}; FN.ev=null; ANA.on=false; ANA.read=0; ANA.next=1.5+Math.random()*2; S.actUsed={}; GUIDE.t=18; GUIDE.last=''; GUIDE.lvl=0; GUIDE.n=0; S.idle=0;
   S.stam=STAM_MAX; S.immuneUsed=0; S.roster={}; S.dead=null; S.death=null; S.wetAcc=0; S.frzAcc=0;
   initRoutes(); RT.hwTaken=0; RT.hwGiven=0;
+  DESK_SEEN={}; S.globeRead=0; S.basinCool=0; S.physCool=0;
+  DESK.used={}; DESK.inited=false; deskInit(); MAT=0;
   for(var uk in USE) USE[uk]=0; MARKS.length=0; MARKN=0; MAPV.marks=[]; DROP.length=0;
   AN.cur=null; AN.t=0; AN.next=45; AN.rained=0;
   buildInterior('teach4');
@@ -3099,6 +3447,8 @@ function tutStart(){
 }
 function tutTick(dt){
   if (!TUT.on) return;
+  /* 到了死亡/结局画面就收掉，别再挂着 */
+  if (RT.end || S.dead || S.death){ TUT.on=false; return; }
   TUT.t+=dt;
   var st=TUT_STEPS[TUT.step];
   if (!st){ TUT.on=false; firstSet('tut'); return; }
@@ -3248,8 +3598,11 @@ var DFX_EPI={
   bell:'第十三下。',
   names:'他们等这个名字等了很久。',
   squeeze:'你比墙软。',
-  freeze:'你最后想的是：衣服确实挂得很整齐。'
-};
+  freeze:'你最后想的是：衣服确实挂得很整齐。',
+   stare:'他们看得太整齐了。',
+   twin:'他转过来的时候，你正在转过去。',
+   lamps:'灯停在你站的那一格上。'
+  };
 /* 每类死法配一个音效 */
 var DFX_SFX={
   laugh:'crack', shatter:'crack', grip:'slam', squeeze:'slam', bell:'bell',
@@ -3288,7 +3641,7 @@ function tryAutoEnter(){
       return;
     }
     var o=n.obj, d=doorOf(o);
-    SFX.door(); go('fade',0.36,function(){ enterRoom(o.enter,d); });
+  /* 已取消自动进楼：走到门口不再自动进去，只有按 E 才进 */
   } else {
     var R=INTERIORS[S.room]; if(!R) return;
     var t=tileAt(R,S.x,S.y);
@@ -3311,6 +3664,21 @@ var elGrid=document.getElementById('grid');
 /* ============================ 道具使用 ============================ */
 var USE={ torch:0, brolly:0, coat:0, map:0, phone:0 };
 var MARKS=[], MARKN=0;
+/* 士力架／电池的计时（秒） */
+var BUFF={ snack:0, battery:0 };
+function coolTick(dt){
+  if (S.basinCool>0) S.basinCool=Math.max(0,S.basinCool-dt);
+  if (S.physCool>0)  S.physCool=Math.max(0,S.physCool-dt);
+}
+function buffTick(dt){
+  if (BUFF.snack>0){ BUFF.snack-=dt; if (BUFF.snack<=0) os('我：……劲儿过去了。',3.2); }
+  if (BUFF.battery>0) BUFF.battery-=dt;
+}
+/* 背包底部显示天赋 —— 玩家随时能确认自己是哪一种人 */
+function talentHint(){
+  if (!S.talentName) return '';
+  return '我的天赋：'+S.talentName+'　—　'+(S.talentText||'');
+}
 function itemHint(id){
   switch(id){
     case 'pill':  return '恢复 32 点 SAN，用完就没有了';
@@ -3325,6 +3693,11 @@ function itemHint(id){
     case 'memo':  return '重读一遍：上面写着数据中心在三楼，门禁认白名单';
     case 'card':  return '带在身上，夜里在校内走动不容易被记违规';
     case 'hw':    return '我的作业本。后排那个人问起的时候，可以递过去';
+      case 'snack': return BUFF.snack>0 ? ('还在劲头上（剩 '+Math.ceil(BUFF.snack)+' 秒随便跑）') : '吃掉：30 秒内跑步不耗体力';
+      case 'battery':return BUFF.battery>0 ? ('装上了（剩 '+Math.ceil(BUFF.battery)+' 秒视野更远）') : '装进手电筒：电量回满，视野变远 60 秒';
+      case 'compass':return '带在身上，会指出最近的那扇门';
+      case 'metronome':'带在身上，走路的步子会跟着它快一点';
+      case 'goggles':return '戴着做实验，就不会再炸';
     case 'phone':
       if (S.batt<=0) return '没电了';
       if (USE.phone===2) return '在打游戏：SAN 慢慢回，但会招来东西（电量 ' + Math.round(S.batt) + '%）';
@@ -3334,9 +3707,33 @@ function itemHint(id){
     default:      return '';
   }
 }
+function useItem2(id){
+  if (id==='snack'){
+    if (BUFF.snack>0){ os('我：还有半条，等会儿。',3.0); return true; }
+    BUFF.snack=30; S.stam=STAM_MAX; SFX.ui();
+    os('我：咬了一口。花生和焦糖，很甜。',4.0);
+    setTimeout(function(){ os('我：……腿上有劲了。',3.6); },2200);
+    return true;
+  }
+  if (id==='battery'){
+    if (BUFF.battery>0){ os('我：刚换过。',3.0); return true; }
+    BUFF.battery=60; S.batt=100; USE.torch=1; SFX.ui();
+    os('我：换上电池。手电筒亮了一大截。',4.2);
+    return true;
+  }
+  if (id==='compass'){ os('我：……它不指北。它指着最近的那扇门。',4.4); return true; }
+  if (id==='metronome'){ os('我：摆锤一直在动。我跟着它走，步子就快了。',4.6); return true; }
+  if (id==='goggles'){ os('我：镜片有点花，不过能看见。',3.6); return true; }
+  return false;
+}
 function useItem(slot){
   if (S.screen!=='play'||S.dead||S.death||RT.end||PAUSE.on||MAPV.on||DLG.open) return false;
   var id=S.bag[slot]; if(!id) return false;
+  /* 先走新道具（士力架／电池／罗盘／节拍器／护目镜） */
+  if (useItem2(id)){
+    if (id==='snack'||id==='battery'){ S.bag[slot]=null; renderBag(); }
+    return true;
+  }
   if (id==='pill'){ S.san=Math.min(100,S.san+32); S.bag[slot]=null; renderBag(); SFX.ui(); os('我：吞了一片药。嘴里全是苦的。',3.2); return true; }
   if (id==='torch'){ USE.torch=USE.torch?0:1; SFX.ui(); dropCache(); os(USE.torch?'我：打开手电筒。':'我：关掉手电筒。',2.4); return true; }
   if (id==='brolly'){ USE.brolly=USE.brolly?0:1; SFX.ui(); os(USE.brolly?'我：撑开伞。':'我：收起伞。',2.4); return true; }
@@ -3364,17 +3761,48 @@ function useItem(slot){
   return false;
 }
 function useCurrent(){ for(var i=0;i<8;i++) if(S.bag[i]) return useItem(i); return false; }
+function bagSel(i){
+  if (i<0||i>=BAG_MAX) return;
+  BAGSEL=i;
+  var kids=elGrid.children;
+  for (var k=0;k<kids.length;k++) kids[k].classList.toggle('sel', k===i);
+  bagNote();
+}
+function bagNote(){
+  var id=S.bag[BAGSEL];
+  var el=document.getElementById('bagnote');
+  if (!el) return;
+  el.textContent = id
+    ? ('选中第 '+(BAGSEL+1)+' 格：'+(ITEMS[id]?ITEMS[id].n:'东西')+'　·　点它使用　·　按 G 丢掉这一格')
+    : ('选中第 '+(BAGSEL+1)+' 格：空的　·　方向键换个格子');
+}
 function renderBag(){
   elGrid.innerHTML='';
+  /* 背包里也写清楚自己是哪一种天赋 —— 玩家不用去别处找 */
+  if (elTalFoot) elTalFoot.textContent = talentHint();
   for(var i=0;i<BAG_MAX;i++){
     var id=S.bag[i], it=id?ITEMS[id]:null;
     var d=document.createElement('div');
-    d.className='slot'+(it?' has':'');
+    d.className='slot'+(it?' has':'')+(i===BAGSEL?' sel':'');
     d.innerHTML = it ? ('<b class="k">'+(i+1)+'</b>'+it.svg+'<span>'+it.n+'</span>') : ('<b class="k">'+(i+1)+'</b><span>空</span>');
-    if (it){ d.style.cursor='pointer';
-      (function(sl){ d.onclick=function(){ if(useItem(sl)) renderBag(); }; })(i); }
+    (function(sl, node){
+      node.onclick=function(){ bagSel(sl); if(S.bag[sl] && useItem(sl)) renderBag(); };
+      /* 鼠标划过就选中 —— 键盘和鼠标共用同一个高亮 */
+      node.onpointerenter=function(){ bagSel(sl); };
+    })(i, d);
+    /* 每一格右上角一个小「丢」—— 触屏没有悬停，只能靠它 */
+    if (it){
+      var x=document.createElement('button');
+      x.type='button'; x.className='drop'; x.textContent='丢';
+      (function(sl){ x.onclick=function(ev){
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        bagSel(sl); throwSelected();
+      }; })(i);
+      d.appendChild(x);
+    }
     elGrid.appendChild(d);
   }
+  bagNote();
 }
 /* ============================ 暂停 / 存档 / 设置 ============================ */
 var PAUSE={ on:false };
@@ -3398,7 +3826,7 @@ function saveGame(){
       day:S.day||1, diff:S.diff||'easy', batt:S.batt, gameT:S.gameT||0,
       use:Object.assign({},USE), marks:MARKS.map(function(p){ return p.slice(); }), markN:MARKN,
       rulewarn:RULEWARN, immuneUsed:S.immuneUsed||0, roster:S.roster||{}, mapMarks:MAPV.marks.map(function(p){return p.slice();}),
-      rt:{ drops:DROP.map(function(d){ return [d.item,d.room,d.x,d.y]; }), fnMsg:FN.msg||0, fnV:FN.v||0, fnOn:FN.on?1:0, fnEnded:FN.ended?1:0, verify:VERIFY, hwTaken:RT.hwTaken||0, hwGiven:RT.hwGiven||0, key:RT.key, plate:RT.plate, carPlates:RT.carPlates, carFuel:RT.carFuel, carUsed:RT.carUsed,
+      rt:{ deskUsed:DESK.used, deskHw:DESK.hw, mat:MAT, drops:DROP.map(function(d){ return [d.item,d.room,d.x,d.y]; }), fnMsg:FN.msg||0, fnV:FN.v||0, fnOn:FN.on?1:0, fnEnded:FN.ended?1:0, verify:VERIFY, hwTaken:RT.hwTaken||0, hwGiven:RT.hwGiven||0, key:RT.key, plate:RT.plate, carPlates:RT.carPlates, carFuel:RT.carFuel, carUsed:RT.carUsed,
            data:RT.data, trash:RT.trash, beast:RT.beast, dropped:RT.dropped,
            clue:RT.clue||0, dblSeen:RT.dblSeen||0, rained:AN.rained||0, hacked:RT.hacked||0 },
       notes:NOTES.map(function(n){ return n.seen?1:0; }),
@@ -3440,6 +3868,9 @@ function loadGame(){
       RT.carFuel=d.rt.carFuel; RT.carUsed=d.rt.carUsed; RT.data=d.rt.data;
       RT.trash=d.rt.trash; RT.beast=d.rt.beast; RT.dropped=d.rt.dropped;
       RT.clue=d.rt.clue||0; RT.dblSeen=d.rt.dblSeen||0; AN.rained=d.rt.rained||0; RT.hacked=d.rt.hacked||0; RT.hwTaken=d.rt.hwTaken||0; RT.hwGiven=d.rt.hwGiven||0;
+    MAT=d.rt.mat||0;
+    if (d.rt.deskUsed) DESK.used=d.rt.deskUsed||{};
+    if (d.rt.deskHw){ DESK.hw=d.rt.deskHw; DESK.inited=true; }
     if (d.rt.drops){ DROP.length=0; for (var dz=0; dz<d.rt.drops.length; dz++){ var e2=d.rt.drops[dz]; DROP.push({item:e2[0],room:e2[1],x:e2[2],y:e2[3]}); } } else DROP.length=0;
     FN.msg=d.rt.fnMsg||0; FN.v=d.rt.fnV||0; FN.on=!!d.rt.fnOn; FN.ended=!!d.rt.fnEnded; FN.k=clamp(FN.v/FN_MAX,0,1); FN.used={};
     if (d.rt.verify){ for (var vk in VERIFY) delete VERIFY[vk]; for (var vk2 in d.rt.verify) VERIFY[vk2]=d.rt.verify[vk2]; } }
@@ -3500,7 +3931,8 @@ function doFlip(){ if(!DEV.on) return;
 function tryInteract(down){
   if (S.dead||S.death||S.screen!=='play'||PAUSE.on||MAPV.on||DLG.open||RT.end) return;
   S.interacted=(S.interacted||0)+1;
-  if (pickupDrop()) return;                   // 地上的东西：先捡
+  /* 捡东西已经交给 F 了。E 只管"用"：翻找、进出、上下楼、做实验、对话。 */
+  if (twinNear()){ twinLook(); return; }        // 天台那个人：站近了按 E 就能看
   if (anaNear() && anaRead()) return;          // 异象解析：先读它
   if (ACT.on){ actStop(false); return; }
   if (S.mode==='out'){
@@ -3523,13 +3955,10 @@ function tryInteract(down){
     var _hr = (S.mode==='in' && S.room) ? INTERIORS[S.room] : null;
     var _tx = _hr ? Math.floor((S.x-_hr.ox)/_hr.tw) : -99;
     var _ty = _hr ? Math.floor((S.y-_hr.oy)/_hr.th) : -99;
-    if (t==='d' && !RT.hwTaken && !RT.hwGiven && !sHas('hw')
-        && S.room==='teach4' && Math.abs(_tx-SEATC)<=2 && Math.abs(_ty-SEATR)<=2){
-      RT.hwTaken=1; addItem('hw'); SFX.ui();
-      os('我：抽屉里有我的作业本。昨天的数学，写完了。',4.8);
-      setTimeout(function(){ os('我：……带着吧。',3.0); },3200);
-      return;
-    }
+    /* 任何一张课桌、柜子、实验台都能翻 */
+    DESK._tx=_tx; DESK._ty=_ty;
+    if (t==='l' && MAT>0){ doExperiment(); return; }
+    if (t==='d' || t==='f' || t==='l'){ searchDesk(t==='l' ? 'lab' : 'desk'); return; }
   if (t==='P'){ S.seated=!S.seated; SFX.ui(); toast(S.seated?'你坐下了。':'你站了起来。'); return; }
   if (t==='B'){ toast(isThirdStall(S.room,S.x,S.y)?'第三个隔间。这里似乎有动静。':'男厕。'); return; }
   if (t==='G'){ toast('女厕。'); return; }
@@ -3542,6 +3971,16 @@ function tryInteract(down){
   if (near.ch==='p'){ playPiano(); actStart('piano'); return; }
   if (near.ch==='n'){ actStart('computer'); return; }
   if (near.ch==='b'){ actStart('sleep'); return; }
+  /* ---- 下面这些原来一个分支都没有，站过去按 E 毫无反应 ----
+     行政楼整层的柜子、实验楼的器材/陈列架/桌子都是摆设，就是这个原因。 */
+  if (near.ch==='f'){ openCabinet(near); return; }        // 行政楼柜子
+  if (near.ch==='d'){ openDrawer(near); return; }         // 课桌抽屉
+  if (near.ch==='t'){ openDrawer(near); return; }         // 音乐教室的桌子
+  if (near.ch==='v'){ searchRack(near); return; }         // 地理陈列架
+  if (near.ch==='l'){ if (MAT>0) doExperiment(); else searchDesk('lab'); return; }   // 实验台
+  if (near.ch==='q'){ doPhysics(); return; }              // 物理器材
+  if (near.ch==='w'){ useBasin(); return; }               // 盥洗盆
+  if (near.ch==='x'){ readGlobe(); return; }              // 地球仪
 }
 function gotoFloor(host,f){
   var id=host+f, R=INTERIORS[id]; if(!R) return;
@@ -3562,7 +4001,8 @@ function enterRoom(id){
   describe(id);
 }
 function exitRoom(){
-  var R=INTERIORS[S.room], o=objById(R.host), door=doorOf(o); if(!door) return;
+  var R=INTERIORS[S.room]; if(!R){ S.mode='out'; S.room=null; return; }   // 房间数据缺失也要能出来，不能卡死
+  var o=objById(R.host), door=doorOf(o); if(!door) return;
   S.mode='out'; S.room=null; S.seated=false;
   S.x = door[0] + door[2]*32;
   S.y = door[1] + door[3]*32;
@@ -3754,10 +4194,23 @@ function drawInteriorTo(ctx,R){
   ctx.save();ctx.lineJoin='round';
   ctx.fillStyle=A.ink;ctx.fillRect(x-7,y-7,w+14,h+14);
   ctx.fillStyle=A.floor;ctx.fillRect(x,y,w,h);
-  if(R.host==='teach'){
+  /* 走廊带只给真正有走廊的教学楼楼层（1–5F）。
+     天台 host 也是 'teach'，但只有 18 行 —— 照画 16–21 行会超出底边 3 格（27 单位），糊到地图上。 */
+  if(R.host==='teach' && R.floor>=1 && R.floor<=5){
     ctx.fillStyle=A.corridor;ctx.fillRect(x+tw,y+16*th,w-2*tw,5*th);
     ctx.fillStyle=BW?'rgba(219,212,195,.06)':'rgba(255,255,235,.17)';
     if(R.rooms)for(var ci=0;ci<R.rooms.length;ci++){var rr=R.rooms[ci];ctx.fillRect(x+(rr[0]+.3)*tw,y+th,(rr[1]-rr[0]+.4)*tw,15*th);}   /* 天台 rooms=null，必须判空 */
+  }
+  /* 天台：只画女儿墙和排水坡，不画教室和走廊 */
+  if(R.host==='teach' && R.floor===6){
+    ctx.fillStyle=BW?'rgba(210,214,210,.05)':'rgba(255,250,232,.12)';
+    ctx.fillRect(x+tw*1.2, y+th*1.2, w-tw*2.4, th*1.6);
+    ctx.strokeStyle=BW?'rgba(220,224,220,.08)':'rgba(120,104,78,.14)';
+    ctx.lineWidth=1;
+    for(var rp=0; rp<3; rp++){
+      var py=y+th*3+rp*th*5;
+      ctx.beginPath(); ctx.moveTo(x+tw, py); ctx.lineTo(x+w-tw, py); ctx.stroke();
+    }
   }
   // Floor tiles: material-specific, not the old plain colored rectangle.
   ctx.strokeStyle=BW?'rgba(232,234,226,.105)':'rgba(80,69,50,.17)';ctx.lineWidth=.55;ctx.beginPath();
@@ -3787,7 +4240,9 @@ function drawInteriorTo(ctx,R){
     aLine(ctx,A.paper,.5,bd.x+bd.w*.51,bd.y+2.2,bd.x+bd.w*.72,bd.y+2.2);
   }
   // furniture covers floor but respects its grid cell semantics
-  for(i=0;i<R.misc.length;i++){var m=R.misc[i];if(m.k!=='wall'&&m.k!=='out'&&m.k!=='link')aFurniture(ctx,m,A);}
+  /* 天台的道具在下面单独画（水箱/通风管），这里跳过 —— 否则会先画一层书架再叠一层水箱 */
+  var _isRoof = (R.host==='teach' && R.floor===6);
+  if(!_isRoof) for(i=0;i<R.misc.length;i++){var m=R.misc[i];if(m.k!=='wall'&&m.k!=='out'&&m.k!=='link')aFurniture(ctx,m,A);}
   for(i=0;i<R.desks.length;i++){
     var dk=R.desks[i],dr=dk.seat;
     aRound(ctx,dk.x+1.1,dk.y+1.6,dk.w,dk.h,1,'rgba(0,0,0,.24)',null);
@@ -3821,9 +4276,51 @@ function drawInteriorTo(ctx,R){
   if(R.clocks)for(i=0;i<R.clocks.length;i++){
     var ck=R.clocks[i];aEll(ctx,ck.x,ck.y,ck.r,ck.r,A.paper);aLine(ctx,A.ink,.65,ck.x,ck.y,ck.x+Math.sin(S.tsec/60)*ck.r*.8,ck.y-Math.cos(S.tsec/60)*ck.r*.8);
   }
+  /* 天台上的东西单独画：水箱 / 空调外机 / 通风管。
+     它们走的是通用的 R(书架) 和 v(陈列架)，在天台上看着就是"天台摆了排书架"。 */
+  /* 天台上的东西单独画：水箱 / 空调外机 / 通风管。
+     它们走的是通用的 R(书架) 和 v(陈列架)，在天台上看着就是「天台摆了排书架」。
+     注意 R.misc 是【数组】，每项形如 {k:种类, x,y,w,h, ch:字符}，坐标已经是世界坐标。 */
+  if(R.host==='teach' && R.floor===6 && R.misc && R.misc.length){
+    for(var mi=0; mi<R.misc.length; mi++){
+      var o2=R.misc[mi];
+      if(!o2 || o2.x===undefined) continue;
+      var ox2=o2.x, oy2=o2.y, ow2=o2.w||tw, oh2=o2.h||th;
+      if (o2.k==='shelf'){
+        /* 水箱：圆角方箱 + 顶上的一圈盖 */
+        aRound(ctx, ox2, oy2, ow2, oh2, 1.2, BW?'rgba(150,156,156,.42)':'rgba(150,164,172,.55)', A.ink, 1);
+        aRound(ctx, ox2+ow2*0.14, oy2+oh2*0.14, ow2*0.72, oh2*0.28, 0.8, BW?'rgba(192,198,198,.34)':'rgba(196,208,214,.5)', A.ink, 0.7);
+        aLine(ctx, A.ink, 0.6, ox2+ow2*0.5, oy2+oh2*0.14, ox2+ow2*0.5, oy2+oh2*0.42);
+      } else if (o2.k==='rack'){
+        /* 通风管：一段方管 + 三片百叶 */
+        aRound(ctx, ox2, oy2, ow2, oh2, 0.6, BW?'rgba(122,128,128,.40)':'rgba(126,138,146,.52)', A.ink, 1);
+        for(var lv=1; lv<=3; lv++){
+          aLine(ctx, A.ink, 0.55, ox2+ow2*0.12, oy2+oh2*lv/4, ox2+ow2*0.88, oy2+oh2*lv/4);
+        }
+      } else {
+        /* 楼梯口之类：普通方块 */
+        aRound(ctx, ox2, oy2, ow2, oh2, 0.7, BW?'rgba(140,146,146,.34)':'rgba(150,160,166,.46)', A.ink, 0.9);
+      }
+    }
+  }
   if(S.room==='teach6'){
-    var fx=R.ox+R.w*.76,fy=R.oy+R.h*.4;aEll(ctx,fx+3,fy+4,12,19,'rgba(0,0,0,.22)');
-    aEll(ctx,fx,fy,9,16,BW?'rgba(185,189,185,.43)':'rgba(95,103,111,.43)');aEll(ctx,fx,fy-19,6,6,A.paper);
+    /* 天台的第二个你 —— 直接套主角模型（drawBody），只换透明度。
+       背对时和你同向；转过来之后面朝你，看得到脸和嘴。 */
+    var tp=twinPos();
+    if (tp){
+      var bx=tp.x, by=tp.y;
+      var awake = TWIN_TURN || (AN.cur==='twin');
+      var tang = TWIN_TURN ? Math.atan2(S.y-by, S.x-bx) : S.ang;
+      ctx.save();
+      ctx.globalAlpha = awake ? 0.88 : 0.50;
+      /* 影子（原模型画在身体外侧的坐标系里） */
+      ctx.beginPath(); ctx.ellipse(bx, by+2.4, 6.6, 3.6, 0, 0, TAU);
+      ctx.fillStyle=BW?'rgba(0,0,0,.45)':'rgba(40,30,20,.22)'; ctx.fill();
+      ctx.translate(bx, by);
+      ctx.rotate(tang+Math.PI/2);
+      drawBody(ctx, 0, 0, TWIN_TURN ? 1 : 0, TWIN_MOUTH);
+      ctx.restore();
+    }
   }
   ctx.restore();
 }
@@ -3850,6 +4347,14 @@ function drawPlayer(){
   ctx.beginPath(); ctx.ellipse(0,2.4,6.6,3.6,0,0,TAU);
   ctx.fillStyle=BW?'rgba(0,0,0,.45)':'rgba(40,30,20,.22)'; ctx.fill();
   ctx.rotate(a+Math.PI/2); ctx.translate(0,-bob);
+  drawBody(ctx, sw, 0, 0, 0);
+  ctx.restore();
+}
+/* 人的身体。调用前必须已经 translate 到脚下、rotate(a+PI/2)、translate(0,-bob)。
+   本地坐标里 -Y 是【正前方】。
+   turn  0 = 背对（看到后脑勺，全是头发）　1 = 正面（看得到脸）
+   mouth 张嘴程度 0..1 */
+function drawBody(ctx, sw, bob, turn, mouth){
   // 鞋
   ctx.fillStyle=P('hair');
   ctx.beginPath(); ctx.ellipse(-2.0+sw*0.45, 5.4+sw, 2.1, 1.5, 0, 0, TAU); ctx.fill();
@@ -3879,12 +4384,23 @@ function drawPlayer(){
   ctx.beginPath(); ctx.ellipse(0,-3.0,1.7,1.4,0,0,TAU); ctx.fill();
   ctx.beginPath(); ctx.ellipse(0,-5.4,3.5,3.8,0,0,TAU); ctx.fill();
   ctx.strokeStyle=P('hair'); ctx.lineWidth=1.5; ctx.stroke();
-  // 头发（朝向的一侧厚重一点）
-  ctx.beginPath(); ctx.ellipse(0,-6.0,3.5,2.9,0,Math.PI*1.02,Math.PI*1.98);
+  // 头发：背对时在正面（看到后脑勺），转过来时翻到背面
+  var hairA0 = turn>0 ? Math.PI*0.02 : Math.PI*1.02;
+  var hairA1 = turn>0 ? Math.PI*0.98 : Math.PI*1.98;
+  ctx.beginPath(); ctx.ellipse(0,-6.0,3.5,2.9,0,hairA0,hairA1);
   ctx.strokeStyle=P('hair'); ctx.lineWidth=2.6; ctx.stroke();
   ctx.beginPath(); ctx.ellipse(0,-4.6,3.3,3.4,0,Math.PI*0.15,Math.PI*0.85);
   ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1.2; ctx.stroke();
-  ctx.restore();
+  /* 正面才画脸：眼睛 + 嘴 */
+  if (turn > 0){
+    ctx.fillStyle='rgba(20,18,16,.85)';
+    ctx.beginPath(); ctx.ellipse(-1.35, -6.0, 0.62, 0.78, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( 1.35, -6.0, 0.62, 0.78, 0, 0, TAU); ctx.fill();
+    if (mouth > 0.01){
+      ctx.fillStyle='rgba(14,12,11,.82)';
+      ctx.beginPath(); ctx.ellipse(0, -4.15, 0.85, 0.30 + 1.15*mouth, 0, 0, TAU); ctx.fill();
+    }
+  }
 }
 /* ============================ SAN 引导 ============================
    SAN 低了主角会自己想起"该去哪儿缓一缓"，并且报出最近的那个地方。
@@ -3962,7 +4478,16 @@ var ROAM={ on:false, x:0, y:0, vx:0, vy:0, cd:0, seen:0 };
 function roamReset(){
   var R=INTERIORS['garage1']; if(!R) return;
   ROAM.x=R.ox+R.w*0.86; ROAM.y=R.oy+R.h*0.5;
-  ROAM.vx=ROAM.vy=0; ROAM.cd=3.5; ROAM.on=true; ROAM.seen=0;
+  ROAM.vx=ROAM.vy=0; ROAM.cd=3.5; ROAM.on=true; ROAM.seen=0; ROAM.told=0; ROAM.seen2=0; ROAM.lit=false;
+}
+/* 光能定住它：手电筒或手机屏幕照着，而且它在你正前方 ±60° 内 */
+function roamLit(){
+  if (!(USE.torch || USE.phone)) return false;
+  var dx=ROAM.x-S.x, dy=ROAM.y-S.y, d2=dx*dx+dy*dy;
+  if (d2 > 260*260) return false;
+  var a=Math.atan2(dy,dx);
+  var diff=Math.abs(((a-S.ang+Math.PI*3)%(Math.PI*2))-Math.PI);
+  return diff < Math.PI/3;
 }
 function roamTick(dt){
   var dg=dangerAt();
@@ -3970,7 +4495,15 @@ function roamTick(dt){
   if (!ROAM.on) roamReset();
   var R=INTERIORS['garage1'];
   ROAM.cd-=dt;
-  if (ROAM.cd<=0){
+  /* 被光照住就不动，而且会慢慢退回去 —— 这是玩家唯一的反制手段 */
+  ROAM.lit = roamLit();
+  if (ROAM.lit){
+    ROAM.cd = Math.max(ROAM.cd, 0.6);
+    if (!ROAM.told){ ROAM.told=1; os('我：光一照过去，它就不动了。',4.6);
+      setTimeout(function(){ if(ROAM.on) os('我：……它怕光。',3.8); },2600); }
+    var bdx=ROAM.x-S.x, bdy=ROAM.y-S.y, bd=Math.sqrt(bdx*bdx+bdy*bdy)||1;
+    ROAM.x += bdx/bd*13*dt; ROAM.y += bdy/bd*13*dt;
+  } else if (ROAM.cd<=0){
     ROAM.cd = 1.1+Math.random()*1.4;
     /* 朝玩家逼近，但绕开柱子 */
     var dx=S.x-ROAM.x, dy=S.y-ROAM.y, dl=Math.sqrt(dx*dx+dy*dy)||1;
@@ -3982,7 +4515,8 @@ function roamTick(dt){
   var dist=Math.sqrt(ddx*ddx+ddy*ddy);
   /* 靠近就掉 SAN；贴脸就死 */
   if (dist<150){ S.san-=dt*1.1; if (!ROAM.seen){ ROAM.seen=1; os('我：车道那头有东西。它不是走路的姿势。',5.2); } }
-  if (dist<26) kill('你在地下车库撞上了那个东西。它一直在等你走过去。');
+  if (dist<150 && !ROAM.seen2){ ROAM.seen2=1; os('我：别直着走。用手电照它。',4.4); }
+  if (dist<26 && !ROAM.lit) kill('你在地下车库撞上了那个东西。它一直在等你走过去。','grip');
 }
 /* 高危区的持续效果 */
 function dangerTick(dt){
@@ -3994,7 +4528,8 @@ function dangerTick(dt){
   if (!S.dangerSeen) S.dangerSeen={};
   if (!S.dangerSeen[dg]){
     S.dangerSeen[dg]=1;
-    if (dg==='garage') os('我：车库里没有灯。只有最里面那盏在闪。',5.0);
+      if (dg==='garage'){ os('我：车库里没有灯。只有最里面那盏在闪。',5.0);
+      setTimeout(function(){ os('我：车道那头有东西在动。光能定住它。',5.0); },3000); }
     else if (dg==='trash') os('我：垃圾房的味道不对。太干净了。',4.6);
     else os('我：熄灯了。这种时候还在外面走，是要被记的。',5.0);
   }
@@ -4018,6 +4553,228 @@ function actDim(kind){
   var used=(S.actUsed && S.actUsed[kind]) || 0;
   return Math.max(0.22, 1 - used*0.28);        // 做过的次数越多，回得越少
 }
+/* ============================ 抽屉里的东西 ============================
+   教学楼／行政楼／实验楼的课桌、办公桌、柜子都能翻。
+   每次翻出的东西是随机的，而且"每张桌子只能翻一次"——翻过会记住。
+   作业本不再固定在自己座位上，而是每次开局随机落在教学楼某间教室的某张桌子里。 */
+var DESK={ used:{}, hw:null, inited:false };
+/* 手上那一件：最近拿到或最近用过的格子。F 放下就是放它。 */
+var HANDSLOT=-1;      // 手上那一件：最近拿到或最近用过的格子。F 放下就是放它。
+var BAGSEL=0;         // 背包里当前高亮的那一格 —— G 丢的就是它
+var LOOT_COMMON=[
+  { id:'done',  n:'写完了的作业',   w:16, say:'我：一本写完的作业。字很工整，不是我的。' },
+  { id:'undone',n:'没写完的作业',   w:18, say:'我：一本只写了一半的作业。后半本全是空白。' },
+  { id:'trash', n:'一堆废纸',       w:20, say:'我：揉成团的纸。展开全是同一道题，写了很多遍。' },
+  { id:'coin',  n:'硬币',           w:10, say:'我：一枚硬币。边缘磨得很圆。' },
+  { id:'card',  n:'学生证',         w:5,  say:'我：一张学生证。照片上的人我不认识，班号是我们班。' },
+  { id:'phone', n:'手机',           w:4,  say:'我：一部手机。还有电，锁屏是黑的。' },
+  { id:'memo',  n:'纸条',           w:6,  say:'我：一张纸条。上面写着门禁和白名单的事。' },
+  { id:'chalk', n:'半截粉笔',       w:9,  say:'我：半截粉笔。断口很新。' },
+  { id:'pill',  n:'药片',           w:4,  say:'我：一板药片。名字被撕掉了。' },
+  { id:'snack',  n:'士力架',       w:7,  say:'我：一条士力架。压在卷子底下。' },
+  { id:'nothing',n:'什么都没有',    w:8,  say:'我：空的。只有一层灰。' }
+];
+/* 各实验室自己的东西 —— 房间不同，翻出来的就不一样 */
+var LOOT_BYLAB={
+  phys:  [ {id:'battery',n:'电池',w:22,say:'我：两节电池。外壳上写着日期，很旧了。'},
+           {id:'gear',   n:'器材',w:18,say:'我：一套力学器材。砝码少了一个。'},
+           {id:'nothing',n:'空的',w:14,say:'我：空的。柜子里只有一层灰。'},
+           {id:'chalk',  n:'粉笔',w:12,say:'我：半截粉笔。断口很新。'} ],
+  chem:  [ {id:'goggles',n:'护目镜',w:20,say:'我：一副护目镜。镜片上有洗不掉的斑点。'},
+           {id:'reagent',n:'试剂瓶',w:20,say:'我：一瓶试剂。瓶身的字被水泡花了。'},
+           {id:'flask',  n:'烧瓶',w:18,say:'我：一个烧瓶。瓶口有一圈白色的东西。'},
+           {id:'nothing',n:'空的',w:12,say:'我：空的。柜子底下一层灰。'} ],
+  comp:  [ {id:'usb',    n:'U 盘',w:20,say:'我：一个 U 盘。上面贴着「门禁」两个字。'},
+           {id:'battery',n:'电池',w:20,say:'我：一板电池。够用很久。'},
+           {id:'phone',  n:'手机',w:12,say:'我：一部旧手机。还能开机。'},
+           {id:'nothing',n:'空的',w:16,say:'我：空的。只有几根断了的网线。'} ],
+  geo:   [ {id:'compass',n:'罗盘',w:22,say:'我：一个罗盘。指针不指北，指向最近的那扇门。'},
+           {id:'map',    n:'平面图',w:14,say:'我：一张校园平面图。边角被翻烂了。'},
+           {id:'nothing',n:'空的',w:18,say:'我：空的。抽屉里全是沙子。'} ],
+  music: [ {id:'metronome',n:'节拍器',w:22,say:'我：一个节拍器。摆锤自己在动，可是没有声音。'},
+           {id:'snack',   n:'士力架',w:14,say:'我：一条士力架。包装是好的。'},
+           {id:'nothing', n:'空的',w:16,say:'我：空的。只有几根断掉的琴弦。'} ]
+};
+var LOOT_LAB=[
+  { id:'tube',  n:'试管',           w:12, say:'我：一支试管。里面还有一点没倒干净的液体。' },
+  { id:'flask', n:'烧瓶',           w:10, say:'我：一个烧瓶。瓶口有一圈白色的东西。' },
+  { id:'gear',  n:'实验器材',       w:10, say:'我：一套没拆封的器材。标签上写着别人的名字。' },
+  { id:'reagent',n:'试剂瓶',        w:9,  say:'我：一瓶试剂。瓶身上的字被水泡花了。' },
+  { id:'nothing',n:'什么都没有',    w:8,  say:'我：空的。柜子底下一层灰。' }
+];
+function lootRoll(table, seed){
+  var tot=0, i;
+  for (i=0;i<table.length;i++) tot+=table[i].w;
+  var r=(seed!==undefined? seed : Math.random())*tot, acc=0;
+  for (i=0;i<table.length;i++){ acc+=table[i].w; if (r<acc) return table[i]; }
+  return table[table.length-1];
+}
+/* 开局决定作业本藏在哪张桌子 */
+function deskInit(){
+  DESK.used={}; DESK.inited=true;
+  var floors=[1,2,3,4,5];
+  var fl=floors[Math.floor(Math.random()*floors.length)];
+  var rooms=ROOMS.length;
+  var ri=Math.floor(Math.random()*rooms);
+  DESK.hw={ floor:fl, room:ri, roomName:RNAME[ri]||('第'+(ri+1)+'间') };
+}
+function deskKey(){ return S.room+'|'+DESK._tx+'|'+DESK._ty; }
+/* 这张桌子是不是藏作业本的那张 */
+function isHwDesk(){
+  if (!DESK.inited || !DESK.hw) return false;
+  if (S.room!=='teach'+DESK.hw.floor) return false;
+  var R=INTERIORS[S.room]; if(!R||!R.rooms) return false;
+  var rm=R.rooms[DESK.hw.room]; if(!rm) return false;
+  return DESK._tx>=rm[0] && DESK._tx<=rm[1] && DESK._ty>=2 && DESK._ty<=8;
+}
+/* 翻桌子／柜子 */
+/* ============================ 各栋楼里的东西 ============================
+   原来只有 7 种家具有反应，行政楼整层的柜子、实验楼大部分的器材都是摆设。
+   现在每一种都有对应的动作。 */
+var DESK_SEEN={};                    // 那些不是"课桌"的容器（柜子/桌子/架子）也各自只翻一次
+function _fkey(prefix, x, y){ return S.room+'|'+prefix+'|'+x+'|'+y; }
+
+function clearSeen(){ for (var k in DESK_SEEN) delete DESK_SEEN[k]; }
+function openCabinet(near){
+  var k=_fkey('cab', near.x, near.y);
+  if (DESK_SEEN[k]){ os('我：这个柜子翻过了。',3.2); return; }
+  DESK_SEEN[k]=1;
+  SFX.ui();
+  var t = (S.room && S.room.indexOf('admin')===0) ? LOOT_ADMIN : LOOT_COMMON;
+  var got = lootRoll(t);
+  os(got.say, 4.6);
+  if (got.id==='nothing'||got.id==='done'||got.id==='undone'||got.id==='trash') return;
+  if (got.id==='tube'||got.id==='flask'||got.id==='gear'||got.id==='reagent'){ MAT=(MAT||0)+1; os('我：……带着吧。',3.4); return; }
+  if (got.id!=='snack' && got.id!=='battery' && sHas(got.id)){ os('我：这个我已经有了。',3.0); return; }
+  addItem(got.id);
+}
+function openDrawer(near){
+  var k=_fkey('drw', near.x, near.y);
+  if (DESK_SEEN[k]){ os('我：翻过了。里面没别的了。',3.0); return; }
+  DESK_SEEN[k]=1;
+  SFX.ui();
+  var got = lootRoll(LOOT_COMMON);
+  os(got.say, 4.6);
+  if (got.id==='nothing'||got.id==='done'||got.id==='undone'||got.id==='trash') return;
+  if (got.id!=='snack' && got.id!=='battery' && sHas(got.id)){ os('我：这个我已经有了。',3.0); return; }
+  addItem(got.id);
+}
+function searchRack(near){
+  var k=_fkey('rack', near.x, near.y);
+  if (DESK_SEEN[k]){ os('我：架子上剩下的都是同一本图册。',3.4); return; }
+  DESK_SEEN[k]=1;
+  SFX.ui();
+  var got = lootRoll(LOOT_BYLAB.geo);
+  os(got.say, 4.6);
+  if (got.id==='nothing'||got.id==='done'||got.id==='undone') return;
+  if (got.id!=='snack' && got.id!=='battery' && sHas(got.id)){ os('我：这个我已经有了。',3.0); return; }
+  addItem(got.id);
+}
+/* 地球仪：看一眼校园的方位，给一条线索 */
+function readGlobe(){
+  if (S.globeRead){ os('我：看过了。地图上就这些地方。',3.0); return; }
+  S.globeRead=1; SFX.ui();
+  os('我：地球仪上贴着一张校园的俯视图。',4.4);
+  setTimeout(function(){ os('我：……图上多画了一条路，通向围墙外面。',4.6); },2400);
+  setTimeout(function(){ os('我：我记住了。',2.8); },5200);
+  RT.clue=(RT.clue||0)+1;
+}
+/* 盥洗盆：洗把脸，回一点 SAN（比专职的"洗脸"活动弱，但随时能用） */
+function useBasin(){
+  if (S.basinCool>0){ os('我：刚洗过。',2.6); return; }
+  S.basinCool=45; SFX.ui();
+  S.san=clamp(S.san+7,0,100);
+  os('我：水很凉。凉得手疼。',4.0);
+}
+/* 物理器材：搭一次装置，结果看运气 */
+function doPhysics(){
+  if (S.physCool>0){ os('我：这一套我已经摆过了。',3.2); return; }
+  S.physCool=60; SFX.ui();
+  var r=Math.random();
+  if (r<0.30){ os('我：我把砝码挂上去，杆子平了。',4.4);
+    setTimeout(function(){ os('我：……正好平衡。这种事不该这么正好。',4.4); },2400);
+    SANadd(10); }
+  else if (r<0.62){ os('我：小球滚下去，撞在挡板上，又滚回来。',4.4);
+    setTimeout(function(){ os('我：来回了很多次，一次都没偏。',4.2); },2400);
+    SANadd(5); }
+  else { os('我：砝码自己滑下来了。砸在地上，没有声音。',4.4); SANadd(-7); }
+}
+var LOOT_ADMIN=[
+  { id:'card',  n:'学生证',   w:14, say:'我：一张学生证。照片上的人我不认识，班号是我们班。' },
+  { id:'memo',  n:'纸条',     w:16, say:'我：一张纸条。写着门禁和白名单的事。' },
+  { id:'key',   n:'钥匙',     w:8,  say:'我：一把钥匙。牌子上写着「车库」。' },
+  { id:'coin',  n:'硬币',     w:12, say:'我：几枚硬币，还有一张过期的饭票。' },
+  { id:'snack', n:'士力架',   w:10, say:'我：一条士力架。压在文件夹底下。' },
+  { id:'chalk', n:'粉笔',     w:12, say:'我：半截粉笔。断口很新。' },
+  { id:'nothing',n:'什么都没有',w:20, say:'我：空的。只有一叠没写完的表格。' }
+];
+function searchDesk(kind){
+  var key=deskKey();
+  var lab = (kind==='lab');
+  if (DESK.used[key]){
+    var it0=DESK.used[key];
+    if (it0==='hw'){ os('我：……作业本我已经拿走了。',3.4); return; }
+    os('我：这张桌子翻过了。'+(it0==='nothing'?'里面是空的。':'刚刚拿过东西。'),3.4);
+    return;
+  }
+  SFX.ui();
+  if (isHwDesk() && !RT.hwTaken && !sHas('hw')){
+    DESK.used[key]='hw'; RT.hwTaken=1; addItem('hw');
+    var hw=DESK.hw;
+    os('我：'+hw.floor+'F '+hw.roomName+' 的抽屉里，有一本作业本。',5.0);
+    setTimeout(function(){ os('我：是我的。昨天的数学，写完了。',4.6); },2600);
+    setTimeout(function(){ os('我：……它怎么会在别人班？',4.4); },5400);
+    return;
+  }
+  var table = LOOT_COMMON;
+  if (kind==='lab'){
+    var mt2=/^lab(\d)$/.exec(S.room||'');
+    var kinds={ '1':'phys','2':'chem','3':'comp','4':'geo','5':'music' };
+    var lk = mt2 ? kinds[mt2[1]] : null;
+    table = (lk && LOOT_BYLAB[lk]) ? LOOT_BYLAB[lk] : LOOT_LAB;
+  }
+  var got=lootRoll(table);
+  DESK.used[key]=got.id;
+  os(got.say, 4.6);
+  if (got.id==='nothing' || got.id==='done' || got.id==='undone' || got.id==='trash') return;
+  if (got.id==='tube'||got.id==='flask'||got.id==='gear'||got.id==='reagent'){
+    MAT = (MAT||0)+1;                                  // 实验材料计数，做实验要用
+    os('我：……带着吧。以后也许用得上。',3.6);
+    return;
+  }
+  if (got.id!=='snack' && got.id!=='battery' && sHas(got.id)){ os('我：这个我已经有了。',3.0); return; }
+  addItem(got.id);
+}
+/* ============================ 做实验 ============================
+   在实验楼对着实验台用材料做一次实验：有概率回 SAN，也有概率出事。 */
+var MAT=0;
+function doExperiment(){
+  var R=INTERIORS[S.room];
+  if (MAT<=0){ os('我：台子上什么都没有。得先找到器材。',4.2); return; }
+  if (ACT.on) return;
+  MAT--;
+  SFX.ui();
+  os('我：我把东西架上，点火。',4.0);
+  var roll=Math.random();
+  if (sHas('goggles')) roll = roll*0.5;      // 护目镜：把坏结果压到下面两档
+  if (roll<0.22){
+    os('我：……烧杯里冒出一点白气，然后什么都没有了。',4.6);
+    SANadd(4);
+  } else if (roll<0.62){
+    os('我：蓝色的火。很稳。我盯着它看了一会儿。',5.0);
+    SANadd(14);
+    setTimeout(function(){ os('我：……心里安静下来了。这不对劲。',4.6); },3000);
+  } else if (roll<0.86){
+    os('我：试剂变黑了，然后自己烧了起来。',4.4);
+    SANadd(-8);
+  } else {
+    os('我：玻璃炸了。碎渣溅到手背上。',4.2);
+    SANadd(-16);
+    setTimeout(function(){ os('我：……伤口里没有血。',4.2); },2600);
+  }
+  os('我：还剩 '+MAT+' 份材料。',3.0);
+}
+function SANadd(v){ S.san=clamp(S.san+v, 0, 100); }
 function actStart(kind){
   var A=ACTS[kind]; if(!A) return false;
   if (ACT.on) return false;
@@ -4301,6 +5058,7 @@ function drawFullMap(){
 /* ============================ 第一人称模式 ============================ */
 var VIEW={ fp:false, cols:0, d:[], a:[], buf:null, bufn:0, bob:0, tile:[], n:0 };
 var FP_MAXD=420;
+/* 电池生效时第一人称看得更远 */
 function fpAlloc(n){
   if (VIEW.bufn===n) return;
   VIEW.bufn=n; VIEW.d=new Float32Array(n); VIEW.a=new Float32Array(n); VIEW.c=new Int32Array(n);
@@ -4970,6 +5728,31 @@ function drawActBar(){
   ctx.font=(13*DPR)+'px "Kaiti SC",serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   ctx.fillText(ACT.label+'　（动一下就停）', MW/2, y-9*DPR);
 }
+/* 罗盘：在小地图上指出最近的那扇门（或校门） */
+function compassDir(){
+  if (!sHas('compass')) return null;
+  var best=null, bd=1e18;
+  if (S.mode==='out'){
+    var G=[['gateN',GATE_N],['gateW',GATE_W]];
+    for (var i=0;i<G.length;i++){
+      var dx=G[i][1].x-S.x, dy=G[i][1].y-S.y, d=dx*dx+dy*dy;
+      if (d<bd){ bd=d; best={x:G[i][1].x, y:G[i][1].y, n:(G[i][0]==='gateN'?'北门':'西门')}; }
+    }
+  } else {
+    for (var k in INTERIORS){
+      var R2=INTERIORS[k]; if (!R2 || !R2.doors) continue;
+      for (var j=0;j<R2.doors.length;j++){
+        var dd=R2.doors[j];
+        var dx2=dd.x-S.x, dy2=dd.y-S.y, d2=dx2*dx2+dy2*dy2;
+        if (d2<bd){ bd=d2; best={x:dd.x, y:dd.y, n:'门'}; }
+      }
+    }
+  }
+  if (!best) return null;
+  best.a = Math.atan2(best.y-S.y, best.x-S.x);
+  return best;
+}
+function buffTickDraw(){}
 function drawMapOverlay(){
   /* 第一人称下常驻一张小图：不然在楼里转两圈就不知道自己在哪了。
      俯视模式仍然只有拿平面图才显示。 */
@@ -5078,7 +5861,7 @@ function drawAnaNote(){
     var fwd=(ANA.x-S.x)*Math.cos(S.ang)+(ANA.y-S.y)*Math.sin(S.ang);
     if (fwd<8 || fwd>300) return;
     var pt=fpAnPoint(ANA.x, ANA.y); if (!pt) return;
-    var sc=clamp(pt[2]*40, 6, 260)*DPR;
+    var sc=clamp(pt[2]*17, 4, 96)*DPR;                    // 原来最大 260px，像贴了张海报
     ctx.save();
     ctx.globalAlpha=al;
     ctx.fillStyle=f.f; ctx.fillRect(pt[0]-sc*0.5, pt[1]-sc*0.62, sc, sc*0.5);
@@ -5097,7 +5880,7 @@ function drawAnaNote(){
   var x=ANA.x, y=ANA.y, cam=MAPX;
   ctx.save();
   ctx.globalAlpha=al;
-  var w=f.w, h=f.h;
+  var w=f.w*0.62, h=f.h*0.62;                             // 俯视也收小一点，别盖住整条路
   ctx.fillStyle=f.f; ctx.fillRect(x-w/2, y-h/2, w, h);
   ctx.strokeStyle=f.s; ctx.lineWidth=1; ctx.strokeRect(x-w/2, y-h/2, w, h);
   ctx.strokeStyle='rgba(40,38,36,.75)'; ctx.lineWidth=1.1;
@@ -5491,26 +6274,35 @@ var GARAGE=(function(){
   for(i=0;i<northBay.length;i++) pick.push([bays[northBay[i]], 2]);
   for(i=0;i<southBay.length;i++) pick.push([bays[southBay[i]], 19]);
   GARAGE_CARS.length=0;
+  /* 车长 4 格、宽 2 格 —— 原来 2×2 是个方块，看着不像车 */
   for(i=0;i<pick.length;i++){
     var cx0=pick[i][0], cy0=pick[i][1];
-    var a1=g[cy0].split(''); a1[cx0]='c'; a1[cx0+1]='c'; g[cy0]=a1.join('');
-    var a2=g[cy0+1].split(''); a2[cx0]='c'; a2[cx0+1]='c'; g[cy0+1]=a2.join('');
-    GARAGE_CARS.push([cx0, cy0]);
+    for(var cy=cy0; cy<cy0+4; cy++){
+      if (cy<1||cy>H-2) continue;
+      var ac=g[cy].split(''); ac[cx0]='c'; ac[cx0+1]='c'; g[cy]=ac.join('');
+    }
+    GARAGE_CARS.push([cx0, cy0, 2, 4]);
   }
-  /* 东侧下坡道口 */
-  var ae=g[H-2].split(''); ae[27]='O'; ae[28]='O'; ae[29]='O'; g[H-2]=ae.join('');
+  /* 东侧下坡道口：放在中间车道（第 8–17 行）的东墙上。
+     原来开在南侧车位那一排（第 24 行），被停着的车挡得严严实实，玩家根本找不到。 */
+  for (var ex=11; ex<=14; ex++){
+    var ae=g[ex].split(''); ae[W-1]='O'; ae[W-2]='O'; g[ex]=ae.join('');
+  }
+  /* 地上画一条黄线，从车道一直指到出口 —— 车库里黑，得给个视觉引导 */
+  for (var lx=30; lx<=W-3; lx++){ var al=g[13].split(''); if (al[lx]==='.') al[lx]='y'; g[13]=al.join(''); }
   return g;
 })();
 function carAt(tx,ty){
   for(var i=0;i<GARAGE_CARS.length;i++){
     var c0=GARAGE_CARS[i];
-    if (tx>=c0[0] && tx<=c0[0]+1 && ty>=c0[1] && ty<=c0[1]+1) return i;
+    var cw=c0[2]||2, ch=c0[3]||2;
+    if (tx>=c0[0] && tx<c0[0]+cw && ty>=c0[1] && ty<c0[1]+ch) return i;
   }
   return -1;
 }
 function sHas(id){ for(var i=0;i<BAG_MAX;i++) if(S.bag[i]===id) return true; return false; }
 function addItem(id){
-  for(var i=0;i<BAG_MAX;i++) if(!S.bag[i]){ S.bag[i]=id; renderBag(); return true; }
+  for(var i=0;i<BAG_MAX;i++) if(!S.bag[i]){ S.bag[i]=id; HANDSLOT=i; renderBag(); return true; }
   os('我：背包满了。',2.6); return false;
 }
 function searchShelf(){
@@ -5871,9 +6663,33 @@ function escape(id){
   if(RT.end) return;
   RT.end=id; RT.endT=0;
   SFX.bell(); SFX.blink(); dlgClose(); elSub.classList.remove('on');
+  subClear();
+
   endRecord(id);
 }
 bindBtn(document.getElementById('endbtn'), function(){ try{ location.reload(); }catch(e){} });
+/* 地上的东西：捡起来。背包满了会说一声。 */
+function tryPickup(){
+  if (S.screen!=='play'||S.dead||S.death||RT.end||PAUSE.on||MAPV.on||DLG.open) return;
+  var i=dropNear();
+  if (i>=0){ pickupDrop(); return; }
+  /* 地上没有 → 把手上的放下（背包开着就放高亮那格） */
+  if (elInv && elInv.classList.contains('open') && S.bag[BAGSEL]){ throwItem(BAGSEL); renderBag(); return; }
+  if (HANDSLOT>=0 && S.bag[HANDSLOT]){ throwItem(HANDSLOT); HANDSLOT=-1; return; }
+  os('我：地上没有东西。',2.6);
+}
+/* 丢掉背包里选中的那一格；没选就提示，不再瞎丢第一件 */
+function throwSelected(){
+  if (S.screen!=='play'||S.dead||S.death||RT.end||PAUSE.on||MAPV.on||DLG.open) return;
+  /* 背包开着 → 丢高亮的那一格（玩家自己选的，绝不会丢错） */
+  if (elInv && elInv.classList.contains('open')){
+    if (S.bag[BAGSEL]){ throwItem(BAGSEL); renderBag(); return; }
+    os('我：这一格是空的。',2.6); return;
+  }
+  /* 背包没开 → 把背包打开让玩家自己挑，而不是替他丢一件 */
+  toggleBag();
+  os('我：想丢哪一件？点一下格子，或者用方向键选，再按 G。',5.0);
+}
 function throwItem(preferredSlot){
   if(S.screen!=='play'||S.dead||S.death||RT.end||PAUSE.on||MAPV.on||DLG.open) return;
   var i, k=(typeof preferredSlot==='number' && preferredSlot>=0 && preferredSlot<BAG_MAX && S.bag[preferredSlot])?preferredSlot:-1;
@@ -5934,6 +6750,62 @@ function triUp(ctx,x,y,s,alpha){
   ctx.strokeStyle='rgba(24,22,20,'+(alpha*0.55)+')'; ctx.lineWidth=1;
   ctx.stroke();
 }
+/* 运动场地：站在里面就提示「按 E 投篮／跑步」，远处也能看见一个场地标 */
+function sportHere(){
+  if (S.mode!=='out') return null;
+  if (onCourt()) return 'hoop';
+  if (onField() || onTrack()) return 'jog';
+  return null;
+}
+function drawSportMarks(){
+  if (S.screen!=='play' || S.dead || S.death || RT.end || MAPV.on || PAUSE.on) return;
+  /* 站在场地里：只提示当前这块 */
+  var here=sportHere();
+  if (here){
+    var label = here==='hoop' ? '按 E 投篮' : '按 E 绕着操场跑';
+    var ctx=C;
+    ctx.save();
+    ctx.font='bold '+Math.round(13*DPR)+'px "Kaiti SC",serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    var w=ctx.measureText(label).width+22*DPR, h=24*DPR;
+    var y=MH*0.30+Math.sin(MARK_T*2.4)*4*DPR;
+    ctx.fillStyle='rgba(14,16,18,0.78)';
+    ctx.fillRect(MW*0.5-w*0.5, y-h*0.5, w, h);
+    ctx.strokeStyle='rgba(226,206,158,0.75)'; ctx.lineWidth=1.4*DPR;
+    ctx.strokeRect(MW*0.5-w*0.5, y-h*0.5, w, h);
+    ctx.fillStyle='#f0e2bc';
+    ctx.fillText(label, MW*0.5, y+1*DPR);
+    ctx.restore();
+    return;
+  }
+  /* 不在场地里：把附近的两块场地标出来，让玩家知道往哪走 */
+  var VENUES=[
+    { x:500*SC, y:300*SC,  n:'篮球场', r:110*SC },
+    { x:500*SC, y:827*SC,  n:'小跑道', r:110*SC },
+    { x:344*SC, y:354*SC,  n:'大操场', r:110*SC }
+  ];
+  var ctx2=C;
+  for (var i=0;i<VENUES.length;i++){
+    var V=VENUES[i];
+    var dx=S.x-V.x, dy=S.y-V.y, d2=dx*dx+dy*dy;
+    if (d2 > V.r*V.r) continue;
+    if (VIEW.fp){
+      var fwd=(V.x-S.x)*Math.cos(S.ang)+(V.y-S.y)*Math.sin(S.ang);
+      if (fwd<20) continue;
+      var pt=fpAnPoint(V.x, V.y); if (!pt) continue;
+      var sc2=clamp(pt[2]*3.4, 2.6, 16)*DPR;
+      triUp(ctx2, pt[0], pt[1]-sc2*3.0+Math.sin(MARK_T*2.4)*3*DPR, sc2*0.5, 0.72);
+      ctx2.font=Math.round(sc2*1.5)+'px "Kaiti SC",serif';
+      ctx2.textAlign='center'; ctx2.fillStyle='rgba(232,216,176,0.72)';
+      ctx2.fillText(V.n, pt[0], pt[1]-sc2*4.6+Math.sin(MARK_T*2.4)*3*DPR);
+    } else {
+      triUp(ctx2, V.x, V.y-V.r*0.34+Math.sin(MARK_T*2.4)*3, 4.0, 0.70);
+      ctx2.font='10px "Kaiti SC",serif'; ctx2.textAlign='center';
+      ctx2.fillStyle='rgba(232,216,176,0.70)';
+      ctx2.fillText(V.n, V.x, V.y-V.r*0.34-11+Math.sin(MARK_T*2.4)*3);
+    }
+  }
+}
 function drawInteractMarks(){
   if (S.screen!=='play' || S.dead || S.death || RT.end) return;
   if (MAPV.on || PAUSE.on || DLG.open) return;
@@ -5967,13 +6839,53 @@ function drawInteractMarks(){
       var fwd=(q[0]-S.x)*Math.cos(S.ang)+(q[1]-S.y)*Math.sin(S.ang);
       if (fwd<8 || fwd>200) continue;
       var pt=fpAnPoint(q[0], q[1]); if (!pt) continue;
-      var sc=clamp(pt[2]*7, 5, 46)*DPR;
-      triUp(ctx, pt[0], pt[1]-sc*1.9+bob*DPR*0.6, sc*0.62, 0.92);
+      var sc=clamp(pt[2]*4.2, 3.2, 22)*DPR;
+      triUp(ctx, pt[0], pt[1]-sc*1.7+bob*DPR*0.4, sc*0.44, 0.88);
     } else {
       var dx=S.x-q[0], dy=S.y-q[1];
       if (dx*dx+dy*dy > 260*260) continue;
-      triUp(ctx, q[0], q[1]-q[2]-6+bob*0.55, 5.2, 0.92);
+      triUp(ctx, q[0], q[1]-q[2]-4+bob*0.4, 3.1, 0.88);
     }
+  }
+}
+/* 车库里那个东西 —— 必须画出来，不然玩家被一个看不见的东西秒杀 */
+function drawRoam(){
+  if (!ROAM.on || S.room!=='garage1' || S.dead || RT.end) return;
+  var ctx=C;
+  var lit = ROAM.lit;
+  if (VIEW.fp){
+    var pt=fpAnPoint(ROAM.x, ROAM.y); if (!pt) return;
+    var hgt=clamp(pt[2]*13, 8, 190)*DPR;
+    var wdt=hgt*0.34;
+    ctx.save();
+    ctx.fillStyle = lit ? 'rgba(26,28,32,0.92)' : 'rgba(8,9,11,0.97)';
+    ctx.beginPath();
+    ctx.moveTo(pt[0]-wdt*0.5, pt[1]+hgt*0.10);
+    ctx.lineTo(pt[0]-wdt*0.34, pt[1]-hgt*0.86);
+    ctx.lineTo(pt[0]+wdt*0.34, pt[1]-hgt*0.86);
+    ctx.lineTo(pt[0]+wdt*0.5, pt[1]+hgt*0.10);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(pt[0], pt[1]-hgt*1.03, wdt*0.30, 0, TAU); ctx.fill();
+    /* 被照住的时候，轮廓上有一圈冷白的反光 */
+    if (lit){
+      ctx.strokeStyle='rgba(220,232,240,0.55)'; ctx.lineWidth=Math.max(1,1.6*DPR); ctx.stroke();
+    } else {
+      /* 没被照住：两点极暗的反光，位置还在慢慢错开 */
+      var eo=Math.sin(MARK_T*1.7)*wdt*0.09;
+      ctx.fillStyle='rgba(196,206,214,0.30)';
+      ctx.beginPath(); ctx.arc(pt[0]-wdt*0.14+eo, pt[1]-hgt*1.03, wdt*0.055, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(pt[0]+wdt*0.14-eo, pt[1]-hgt*1.03, wdt*0.055, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  } else {
+    var dx=ROAM.x-S.x, dy=ROAM.y-S.y;
+    if (dx*dx+dy*dy > 300*300) return;
+    ctx.save();
+    ctx.fillStyle = lit ? 'rgba(22,24,28,0.95)' : 'rgba(6,7,9,0.97)';
+    ctx.beginPath(); ctx.ellipse(ROAM.x, ROAM.y, 7.5, 9.5, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(ROAM.x, ROAM.y-2.5, 4.6, 0, TAU); ctx.fill();
+    if (lit){ ctx.strokeStyle='rgba(214,228,238,0.65)'; ctx.lineWidth=1.4; ctx.stroke(); }
+    ctx.restore();
   }
 }
 function drawDrops(){
@@ -6058,7 +6970,7 @@ function nightUpdate(dt){
     S.san -= dt*0.50;                       // 灯下 SAN 掉得更快
     if (!NIGHT.warn1 && NIGHT.litT>3.0){ NIGHT.warn1=1; os('我：……灯下面那个影子不动。',4.0); }
     if (!NIGHT.warn2 && NIGHT.litT>4.2){ NIGHT.warn2=1; os('我：它在等我看过去。',3.6); }
-    if (NIGHT.litT>5.2) kill('路灯下的东西把你收了。');
+    if (NIGHT.litT>5.2) kill('路灯下的东西把你收了。','lamps');
   } else {
     NIGHT.litT=Math.max(0, NIGHT.litT-dt*1.5);
     if (NIGHT.litT<=0){ NIGHT.warn1=0; NIGHT.warn2=0; }
@@ -6535,6 +7447,8 @@ function devToggle(){
 function render(){
   var controlling=S.screen==='play' && !S.dead && !S.death && !RT.end;
   document.body.classList.toggle('playing',controlling);
+  /* 兜底：按钮已经没了却还认为对话框开着 —— 会把手机端的按钮锁死 */
+  if (DLG.open && elDlgC && elDlgC.children && elDlgC.children.length===0) dlgClose();
   var locked=PAUSE.on || MAPV.on || DLG.open || elInv.classList.contains('open');
   document.body.classList.toggle('control-lock',locked);
   document.body.classList.toggle('map-open',MAPV.on && controlling);
@@ -6547,7 +7461,7 @@ function render(){
   if (RT.end){ RT.endT+=1/60; drawEnd(); trDraw(); return; }
   if (VIEW.fp && S.screen==='play' && !S.dead && !S.death && !PAUSE.on){
     VIEW.bob = S.moving ? Math.sin(S.walkPhase)*2.2*DPR : 0;
-    drawFP(); drawAnomalyFP(); drawAnaNote(); drawDrops(); drawInteractMarks();
+    drawFP(); drawAnomalyFP(); drawAnaNote(); drawDrops(); drawInteractMarks(); drawSportMarks(); drawRoam();
   { var bp2=ballPos();
     if (bp2 && VIEW.fp){
       var pt2=fpAnPoint(bp2[0], bp2[1]);
@@ -6628,6 +7542,8 @@ function render(){
     } }
   drawAnaNote();
   drawInteractMarks();
+  drawSportMarks();
+  drawRoam();
   drawDrops();
   drawPlayer();
   // 远端渐隐
@@ -6731,9 +7647,10 @@ function update(dt){
     ax=0; ay=0;
   }
   var wantRun=!!(K['shift']&&(ax||ay));
-  if (wantRun && (S.stam<=6||(S.stam<=30&&S.stamCool>0))) wantRun=false;
+  if (BUFF.snack>0) S.stam=STAM_MAX;                       // 士力架期间体力不掉
+  if (wantRun && BUFF.snack<=0 && (S.stam<=6||(S.stam<=30&&S.stamCool>0))) wantRun=false;
   S.sprinting=wantRun;
-  if (wantRun){ S.stam-=STAM_DRAIN*dt; S.stamCool=0.9; if(S.stam<0)S.stam=0; }
+  if (wantRun){ if (BUFF.snack<=0){ S.stam-=STAM_DRAIN*dt; } S.stamCool=0.9; if(S.stam<0)S.stam=0; }
   else { S.stamCool-=dt; if(S.stamCool<=0) S.stam=Math.min(STAM_MAX,S.stam+STAM_REGEN*dt); }
   if (S.moving){ S.idle=0; S.moved=(S.moved||0)+dt; } else S.idle=(S.idle||0)+dt;   // 站定多久，引导要看这个
   var m=Math.sqrt(ax*ax+ay*ay), tvx=0, tvy=0;
@@ -6757,6 +7674,7 @@ function update(dt){
   if (m>0){ ax/=m; ay/=m;
     if (!VIEW.fp){ S.ang=angLerp(S.ang,Math.atan2(ay,ax),Math.min(1,dt*16)); }
     var spd=S.sprinting?SPD_WALK+(SPD_RUN-SPD_WALK)*(0.35+0.65*S.stam/STAM_MAX):SPD_WALK;
+  if (sHas('metronome')) spd*=1.12;      // 节拍器：步子跟着摆锤快一点
     tvx=ax*spd; tvy=ay*spd; }
   var kk=Math.min(1,dt*13);
   S.vx+=(tvx-S.vx)*kk; S.vy+=(tvy-S.vy)*kk;
@@ -6823,7 +7741,7 @@ function update(dt){
   if (BW) drain*=1.25;
   drain*=(1+S.viol/70);
   S.san=clamp(S.san-drain*dt*(S.talent==='cold'?0.65:1),0,100);
-  if (S.san<=0) kill('你成了课表的一部分。');
+  if (S.san<=0) kill('你成了课表的一部分。','names');
 
   if (S.san<55){ S.heartT-=dt; if (S.heartT<=0){ SFX.heart(); S.heartT=0.55+S.san/100; } }
   anUpdate(dt);
@@ -6833,7 +7751,7 @@ function update(dt){
 /* ============================ HUD ============================ */
 var elSan=document.getElementById('sanbar'), elClock=document.getElementById('clock'),
     elSched=document.getElementById('sched'), elLoc=document.getElementById('locname'),
-    elToast=document.getElementById('toast'), elPrompt=document.getElementById('prompt'), elTut=document.getElementById('tut'),
+    elToast=document.getElementById('toast'), elPrompt=document.getElementById('prompt'), elTut=document.getElementById('tut'), elTal=document.getElementById('talent-tag'), elTalFoot=document.getElementById('talfoot'),
     elChoices=document.getElementById('choices'), elVign=document.getElementById('vign');
 var CH=[];
 /* ---- 主角对话框 + 底部内心字幕 ---- */
@@ -6841,7 +7759,40 @@ var elDlg=document.getElementById('dlg'), elDlgB=document.getElementById('dlgb')
     elDlgC=document.getElementById('dlgc'), elSub=document.getElementById('sub');
 var DLG={ open:false, t:0, dur:0, cb:null };
 /* 统一走底部字幕：主角说话/场景说明用「我：」，纯内心不带前缀。不再是聊天气泡。 */
-function subShow(text,dur){ elSub.textContent=text; elSub.classList.add('on'); SUB.t=0; SUB.dur=dur||OPT.sub||4.2; }
+/* 底部字幕队列。最多 3 行，新的在下面，旧的往上淡出。 */
+var SUBS=[];
+function subShow(text,dur){
+  var d=dur||OPT.sub||4.2;
+  var t=String(text||'');
+  if (!t) return;
+  /* 完全一样的连续两句就并成一句，别刷屏 */
+  var last=SUBS[SUBS.length-1];
+  if (last && last.t===t){ last.dur=d; last.age=0; subRender(); return; }
+  SUBS.push({ t:t, dur:d, age:0 });
+  if (SUBS.length>3) SUBS.shift();
+  subRender();
+}
+function subRender(){
+  if (!elSub) return;
+  var h='';
+  for (var i=0;i<SUBS.length;i++){
+    var age=i/3;                                  // 越靠上越旧
+    var op=(1-age*0.55).toFixed(2);
+    var sz=(1-age*0.10).toFixed(2);
+    h+='<div class="subline" style="opacity:'+op+';font-size:'+sz+'em">'+SUBS[i].t+'</div>';
+  }
+  elSub.innerHTML=h;
+  elSub.classList.toggle('on', SUBS.length>0);
+}
+function subTick(dt){
+  var changed=false;
+  for (var i=SUBS.length-1;i>=0;i--){
+    SUBS[i].age+=dt;
+    if (SUBS[i].dur>0 && SUBS[i].age>SUBS[i].dur){ SUBS.splice(i,1); changed=true; }
+  }
+  if (changed) subRender();
+}
+function subClear(){ SUBS.length=0; if (elSub){ elSub.innerHTML=''; elSub.classList.remove('on'); } }
 function say(text,dur){
   var t=String(text);
   if (t.indexOf('我：')!==0) t='我：'+t;
@@ -6865,7 +7816,7 @@ var SUB={ t:0, dur:0 };
 function os(text,dur){ subShow(text,dur||4.2); }
 function dlgUpdate(dt){
   if (DLG.open && DLG.dur>0){ DLG.t+=dt; if (DLG.t>DLG.dur) dlgClose(); }
-  if (SUB.dur>0){ SUB.t+=dt; if (SUB.t>SUB.dur){ SUB.dur=0; elSub.classList.remove('on'); } }
+  subTick(dt);
   if (DLG.open && S.screen==='play' && !S.dead){
     var sx=(S.x-cam.x)*cam.z+W/2, sy=(S.y-cam.y)*cam.z+H/2;
     var bw=elDlg.offsetWidth||300;
@@ -6898,18 +7849,33 @@ function hud(){
   elVign.style.opacity = (S.san<45&&!S.dead&&!S.death) ? String(clamp((45-S.san)/45,0,0.9)) : '0';
   var p=null;
   if (S.dead||S.death) p=null;
-  else if (S.mode==='out'){ var n=nearestEnterable();
-    if (n) p=n.gate?'走到校门':('走近「'+n.obj.n+'」的门'); }
+  else if (S.mode==='out'){
+    var sh=sportHere();
+    if (sh) p = (sh==='hoop') ? '按 E 投篮' : '按 E 绕着操场跑';
+    else { var n=nearestEnterable();
+      if (n) p=n.gate?'走到校门':('走近「'+n.obj.n+'」的门'); } }
   else { var R=INTERIORS[S.room], t=tileAt(R,S.x,S.y), f=nearbyFurniture(R);
     /* 优先级：地上的东西 > 自己的抽屉 > 楼梯/门/座位 */
     if (dropNear()>=0){
       var _dd=DROP[dropNear()];
-      p='按 E 捡起「'+(ITEMS[_dd.item]?ITEMS[_dd.item].n:'东西')+'」';
+      p='按 F 捡起「'+(ITEMS[_dd.item]?ITEMS[_dd.item].n:'东西')+'」';
     }
-    else if (t==='d' && !RT.hwTaken && !RT.hwGiven && !sHas('hw') && S.room==='teach4'
-             && Math.abs(Math.floor((S.x-R.ox)/R.tw)-SEATC)<=2
-             && Math.abs(Math.floor((S.y-R.oy)/R.th)-SEATR)<=2){
-      p='按 E 翻自己的抽屉';
+    /* 「放下」放在最后 —— 站在桌子/柜子旁边时，应该先提示翻找 */
+    else if (t==='d' || t==='f' || t==='l'){
+      /* 翻过就明说翻过了，省得玩家反复按 */
+      var _dtx=Math.floor((S.x-R.ox)/R.tw), _dty=Math.floor((S.y-R.oy)/R.th);
+      var _dkey=S.room+'|'+_dtx+'|'+_dty;
+      if (DESK.used[_dkey]){
+        p = (DESK.used[_dkey]==='nothing') ? '这张桌子是空的（翻过了）' : '这张桌子翻过了';
+      } else if (t==='l' && MAT>0){
+        p='按 E 做一次实验（还有 '+MAT+' 份材料）';
+      } else if (t==='l'){
+        p='按 E 翻实验台';
+      } else if (t==='f'){
+        p='按 E 翻柜子';
+      } else {
+        p='按 E 翻抽屉';
+      }
     }
     else if (t==='S') p='按 E 上楼 · Shift+E 下楼';
     else if (t==='O') p='按 E 出去';
@@ -6919,12 +7885,28 @@ function hud(){
       ? '按 E 坐下 · 旁边那张课桌可以翻'
       : (S.seated?'按 E 站起来':'按 E 坐下（你的座位）');
     else if (t==='B') p=isThirdStall(S.room,S.x,S.y)?'第三个隔间 · 按 G 留下物品':'按 E 看看';
-    else if (f) p='按 E 交互 · '+({c:'车辆',D:'终端',R:'书架',X:'第三个桶',p:'钢琴',n:'电脑',b:'床铺',d:'课桌',P:'课桌'}[f.ch]||'物品'); }
+    else if (twinNear()) p='按 E 看看那个人';
+    else if (f){
+      var FN2={ c:'车辆', D:'终端', R:'书架', X:'第三个桶', p:'钢琴', n:'电脑', b:'床铺',
+                d:'课桌', P:'课桌', f:'柜子', l:(MAT>0?'做一次实验':'实验台'),
+                t:'桌子', v:'陈列架', q:'物理器材', w:'洗把脸', x:'地球仪' };
+      p='按 E '+(FN2[f.ch]? (f.ch==='l'&&MAT>0?'做一次实验（还有 '+MAT+' 份材料）':('翻'+FN2[f.ch])) : '看看');
+    }
+    /* 最后才轮到「放下」—— 站在桌子/柜子旁边时应该先提示翻找 */
+    else if (HANDSLOT>=0 && S.bag[HANDSLOT]){
+      p='按 F 放下「'+(ITEMS[S.bag[HANDSLOT]]?ITEMS[S.bag[HANDSLOT]].n:'东西')+'」';
+    }
+  }
   /* 首次教程：一步一步，做对了才换下一条 */
   if (elTut){
     var tl=tutLabel();
     if (tl){ elTut.textContent=tl; elTut.classList.add('on'); }
-    else elTut.classList.remove('on');
+    else { elTut.classList.remove('on'); if (elTut.textContent) elTut.textContent=''; }
+  if (elTal){
+    var talTxt = S.talentName ? ('天赋 · <b>'+S.talentName+'</b>') : '';
+    if (elTal._tv !== talTxt){ elTal._tv = talTxt; elTal.innerHTML = talTxt; }
+    elTal.style.display = talTxt ? 'block' : 'none';
+  }
   }
   if (p){ elPrompt.textContent=p; elPrompt.style.display='block'; }
   else { elPrompt.style.display='none'; elPrompt.textContent=''; }   // 藏起来的同时把旧文字也清掉
@@ -6944,6 +7926,7 @@ function frame(now){
   if (guard>=6) acc=0;
   frames++;
   if (FLASHBLOOM.t>0) FLASHBLOOM.t-=dt;
+  tutTick(dt);               // 必须放在 update 之外 —— update/anUpdate 在死亡时会提前 return
   flashUpdate(dt);            // 必须放在 update 之外 —— update 在开地图/暂停/死亡时会提前 return，
                               // 放在里面会让闪回卡住，BW 停在 false，再也切不回里世界
   if (S.dead) deadSeqTick(dt);
@@ -6996,7 +7979,7 @@ window.__dbg={ I:INTERIORS, O:OBJ, tileAt:tileAt, doorOf:doorOf, SC:SC, AN:AN, S
                interact:function(d){ tryInteract(d); }, go:go, newDream:newDream, proNext:proNext,
                resetGame:resetGame, castRay:castRay, BASE:BASE, OCC:OCC, VIS:VIS,
                findTileIn:findTileIn, bridgeTarget:bridgeTarget,
-               escape:escape, ENDINGS:ENDINGS, RT:RT, AN_ID:AN_ID, anStart:anStart, anEnd:anEnd, ENDSC:ENDSC,
+               escape:escape, ENDINGS:ENDINGS, RT:RT, get HANDSLOT(){ return HANDSLOT; }, needWhere:needWhere, update:update, get BAGSEL(){ return BAGSEL; }, bagSel:bagSel, renderBag:renderBag, toggleBag:toggleBag, roofTick:roofTick, twinPos:twinPos, twinNear:twinNear, twinLook:twinLook, TWIN:TWIN, drawBody:drawBody, get TWIN_TURN(){return TWIN_TURN;}, get TWIN_OFF(){return TWIN_OFF;}, get TWIN_MOUTH(){return TWIN_MOUTH;}, twinBase:twinBase, resetTwin:resetTwin, flashBack:flashBack, AN_ID:AN_ID, tryPickup:tryPickup, throwSelected:throwSelected, anStart:anStart, anEnd:anEnd, ENDSC:ENDSC,
                useCar:useCar, useData:useData, useTrash:useTrash, checkGate:checkGate,
                searchShelf:searchShelf, throwItem:throwItem, eggTick:eggTick, NOTES:NOTES, OPT:OPT,
                enterRoom:enterRoom, exitRoom:exitRoom, buildInterior:buildInterior, dropCache:dropCache,
@@ -7022,7 +8005,7 @@ window.__dbg={ I:INTERIORS, O:OBJ, tileAt:tileAt, doorOf:doorOf, SC:SC, AN:AN, S
                fpBox:fpBox, fpQuad:fpQuad, onField:onField, inCorridor:inCorridor, nearXY:nearXY, fpGroundPoint:fpGroundPoint, fpGroundQuad:fpGroundQuad, fpDoorPlates:fpDoorPlates, fpAccents:fpAccents,
                DRAW:{ get n(){ return VIEW.n; }, get culled(){ return VIEW.culled; }, get total(){ return VIEW.total; }, get cols(){ return VIEW.cols; } },
                isDay1:isDay1, anKill:anKill, dif:dif, get RULEWARN(){ return RULEWARN; } , chalkPred:function(){ return AN.chalkT; }, isThirdStall:isThirdStall, trashWindow:trashWindow, get MENU_EL(){ return MENU_EL; }, get menuRootEl(){ return menuRoot; }, anUpdate:anUpdate, chalkSurface:chalkSurface, CHALK_SURF:CHALK_SURF, rosSurface:rosSurface, ROS_SURF:ROS_SURF,
-               VERIFY:VERIFY, verifyIdea:verifyIdea, GATE_N:GATE_N, BALL:BALL, ballPos:ballPos, actMotion:actMotion, TUT:TUT, tutTick:tutTick, tutLabel:tutLabel, tutStart:tutStart, firstHas:firstHas, firstSet:firstSet, FIRST_KEY:FIRST_KEY, drawInteractMarks:drawInteractMarks, DROP:DROP, dropNear:dropNear, pickupDrop:pickupDrop, SFX:SFX, AN_SMALL:AN_SMALL, AN_BIG:AN_BIG, AN_DAY1:AN_DAY1, DFX:DFX, DFX_MAP:DFX_MAP, DFX_EPI:DFX_EPI, DFX_SFX:DFX_SFX, DEADSEQ:DEADSEQ, FN:FN, FN_END:FN_END, fnEndTick:fnEndTick, FN_POEM:FN_POEM, FN_EV:FN_EV, FN_MAX:FN_MAX, fnTick:fnTick, fnDeliver:fnDeliver, fnBegin:fnBegin, fnEvent:fnEvent, fnFinish:fnFinish, fnSetBW:fnSetBW, AU:AU, auPiano:auPiano, ensureAudio:ensureAudio, ANA:ANA, ANA_TEXT:ANA_TEXT, ANA_FORMS:ANA_FORMS, anaTick:anaTick, anaSpawn:anaSpawn, anaRead:anaRead, anaNear:anaNear, anaAllowed:anaAllowed, DLG:DLG, itemHint:itemHint, addItem:addItem, sHas:sHas, PAL:PAL, get BWv(){ return BW; }, MOVE:MOVE, ambUpdate:ambUpdate, NIGHT:NIGHT, NIGHT_LIGHTS:NIGHT_LIGHTS, drawNightOverlay:drawNightOverlay, isNight:isNight, nightUpdate:nightUpdate};
+               VERIFY:VERIFY, verifyIdea:verifyIdea, GATE_N:GATE_N, BALL:BALL, ballPos:ballPos, actMotion:actMotion, TUT:TUT, tutTick:tutTick, tutLabel:tutLabel, tutStart:tutStart, firstHas:firstHas, firstSet:firstSet, FIRST_KEY:FIRST_KEY, drawInteractMarks:drawInteractMarks, DROP:DROP, dropNear:dropNear, pickupDrop:pickupDrop, SFX:SFX, AN_SMALL:AN_SMALL, AN_BIG:AN_BIG, AN_DAY1:AN_DAY1, DFX:DFX, DFX_MAP:DFX_MAP, DFX_EPI:DFX_EPI, DFX_SFX:DFX_SFX, DEADSEQ:DEADSEQ, FN:FN, FN_END:FN_END, fnEndTick:fnEndTick, FN_POEM:FN_POEM, FN_EV:FN_EV, FN_MAX:FN_MAX, fnTick:fnTick, fnDeliver:fnDeliver, fnBegin:fnBegin, fnEvent:fnEvent, fnFinish:fnFinish, fnSetBW:fnSetBW, AU:AU, auPiano:auPiano, ensureAudio:ensureAudio, ANA:ANA, ANA_TEXT:ANA_TEXT, ANA_FORMS:ANA_FORMS, anaTick:anaTick, anaSpawn:anaSpawn, anaRead:anaRead, anaNear:anaNear, anaAllowed:anaAllowed, DLG:DLG, itemHint:itemHint, addItem:addItem, sHas:sHas, PAL:PAL, get BWv(){ return BW; }, elTut:elTut, TALENTS:TALENTS, rollTalent:rollTalent, nearestEnterable:nearestEnterable, get FADE(){ return FADE; }, GARAGE_CARS:GARAGE_CARS, get DESK_SEEN(){ return DESK_SEEN; }, clearSeen:clearSeen, openCabinet:openCabinet, openDrawer:openDrawer, searchRack:searchRack, readGlobe:readGlobe, useBasin:useBasin, doPhysics:doPhysics, LOOT_ADMIN:LOOT_ADMIN, ROAM:ROAM, roamLit:roamLit, drawRoam:drawRoam, SUBS:SUBS, subShow:subShow, subTick:subTick, subClear:subClear, talentHint:talentHint, BUFF:BUFF, useItem2:useItem2, LOOT_BYLAB:LOOT_BYLAB, compassDir:compassDir, inMeal:inMeal, MOVE:MOVE, DESK:DESK, AN_W:AN_W, anWeight:anWeight, AN_SMALL:AN_SMALL, AN_BIG:AN_BIG, deskInit:deskInit, searchDesk:searchDesk, doExperiment:doExperiment, get MAT(){ return MAT; }, sportHere:sportHere, ambUpdate:ambUpdate, NIGHT:NIGHT, NIGHT_LIGHTS:NIGHT_LIGHTS, drawNightOverlay:drawNightOverlay, isNight:isNight, nightUpdate:nightUpdate};
 })();
 </script>
 </body>
