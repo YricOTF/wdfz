@@ -877,6 +877,7 @@ function verifyIdea(id){
     os(why2||'我：这条路是通的。',5.0);
   }
 }
+var THINKING=false;      // 当前开着的对话框是不是"思索"
 function thinkOpen(){
   if (S.screen!=='play'||S.dead||S.death||RT.end||PAUSE.on||MAPV.on||DLG.open) return;
   var list=thinkList();
@@ -902,7 +903,8 @@ function thinkOpen(){
       var sub=labels.slice(pages[pg][0], pages[pg][1]);
       var last = (pg>=pages.length-1);
       sub.push(last ? '（回到第一条）' : '（看后面的）');
-      ask('我在想，怎么才能出去。（'+(pg+1)+'/'+pages.length+'）', sub, function(k2){
+      THINKING=true;
+      ask('我在想，怎么才能出去。（'+(pg+1)+'/'+pages.length+'　H 收起）', sub, function(k2){
         if (k2 === sub.length-1){
           if (last) thinkOpen(); else goPage(pg+1);
           return;
@@ -3194,6 +3196,10 @@ addEventListener('keydown', function(e){
   anyKey();
   var k=e.key.toLowerCase();
   if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(k)>=0) e.preventDefault();
+  /* ★ 移动键必须在所有守卫之前记下来。
+     原来 K[k]=true 写在几十行之后，而「对话框开着」那条守卫会直接 return ——
+     于是按 H 打开思索之后，移动键永远记不上，人就动不了。 */
+  K[k]=true;
   if (RT.end){ if(k==='enter'||k===' '||k==='escape') endClick(null,null,true); return; }
   if (S.screen==='pro'){ if (k===' '||k==='enter') proNext(); return; }
   if (S.screen==='title'){
@@ -3220,7 +3226,12 @@ addEventListener('keydown', function(e){
     return;
   }
   if(PAUSE.on) return;
-  if(DLG.open){ if(k>='1'&&k<='9') pickChoice(+k-1); return; }
+  if(DLG.open){
+    if (k>='1'&&k<='9'){ pickChoice(+k-1); return; }
+    /* 按 H 打开的就按 H 关掉 —— 原来只能用 Esc，而且没有任何提示 */
+    if (k==='h' && THINKING){ THINKING=false; dlgClose(); os('我：先不想了。',2.4); return; }
+    return;
+  }
   if(MAPV.on){ if(k==='m') mapToggle(); else if(k==='n') mapMark(); return; }
   if(elInv.classList.contains('open')){
     /* 背包开着的时候：方向键 / WASD 换格子，1-8 直接用，G 丢掉选中的那一格 */
@@ -3374,19 +3385,22 @@ function drawStick(){
 var elTitle=document.getElementById('title'), elPro=document.getElementById('pro'),
     elProText=document.getElementById('protext'), elHud=document.getElementById('hud'),
     elInv=document.getElementById('inv');
+/* 天赋：写的是「你是谁」，不是「你该干什么」。
+   原来是「垃圾桶那条路成功率更高」「你能数到第 14 秒」这种 —— 等于把答案印在脸上，
+   玩家不用想，照着做就行。现在只描述这个人本身，怎么用要自己去连。 */
 var TALENTS=[
-  ['code','编程社','你能改掉数据中心里的东西。'],
-  ['drive','车感好','给你一辆车你就能开走。'],
-  ['map','过目不忘','走过的房间会自动画在平面图上。'],
-  ['stomach','铁胃','食堂那桌菜，你能抗住更久。'],
-  ['night','夜视','视野更亮，地下车库不迷路。'],
-  ['hand','手稳','扔东西必中。'],
-  ['watch','秒表','手表上有秒针 —— 你能数到第 14 秒。'],
-  ['thin','瘦小','垃圾桶那条路成功率更高。'],
-  ['cold','血冷','SAN 掉得慢，回得也慢。'],
-  ['known','熟人','保安认识你。'],
-  ['immune','天生免疫','每局一次，致命异象自动规避。'],
-  ['crowd','藏在人群里','人多的房间里，异象不盯你。']
+  ['code','编程社','机房那套东西，你看一眼就懂。'],
+  ['drive','车感好','你爸教过你开车。这事你没跟人说过。'],
+  ['map','过目不忘','走过的路，你不会忘。'],
+  ['stomach','铁胃','你的胃比一般人结实。'],
+  ['night','夜视','暗的地方你也看得清。'],
+  ['hand','手稳','你扔东西很少失手。'],
+  ['watch','秒表','你手腕上有一块带秒针的表。'],
+  ['thin','瘦小','你比同龄人瘦小一圈。'],
+  ['cold','血冷','你不容易慌。慌起来也慢。'],
+  ['known','熟人','保安叫得出你的名字。'],
+  ['immune','天生免疫','总有那么一次，要命的事会绕开你。'],
+  ['crowd','藏在人群里','人多的时候，你不显眼。']
 ];
 /* 编程社提供额外的《白名单》结局；其余天赋仅提供增益，不锁普通路线。 */
 var ROUTE_NEED={ face:'编程社' };
@@ -3403,6 +3417,7 @@ function resetGame(){
   actStop(false); pianoStop(); FN.on=false; FN.endT=-1; FN.endI=0; FN.v=0; FN.msg=0; FN.ended=false; FN.k=0; FN.used={}; FN.ev=null; ANA.on=false; ANA.read=0; ANA.next=1.5+Math.random()*2; S.actUsed={}; GUIDE.t=18; GUIDE.last=''; GUIDE.lvl=0; GUIDE.n=0; S.idle=0;
   S.stam=STAM_MAX; S.immuneUsed=0; S.roster={}; S.dead=null; S.death=null; S.wetAcc=0; S.frzAcc=0;
   initRoutes(); RT.hwTaken=0; RT.hwGiven=0;
+  if (devLoad()){ DEV.on=true; devApply(); }   // 上次开着就继续开着
   DESK_SEEN={}; S.globeRead=0; S.basinCool=0; S.physCool=0;
   DESK.used={}; DESK.inited=false; deskInit(); MAT=0;
   for(var uk in USE) USE[uk]=0; MARKS.length=0; MARKN=0; MAPV.marks=[]; DROP.length=0;
@@ -4243,6 +4258,7 @@ function drawInteriorTo(ctx,R){
   /* 天台的道具在下面单独画（水箱/通风管），这里跳过 —— 否则会先画一层书架再叠一层水箱 */
   var _isRoof = (R.host==='teach' && R.floor===6);
   if(!_isRoof) for(i=0;i<R.misc.length;i++){var m=R.misc[i];if(m.k!=='wall'&&m.k!=='out'&&m.k!=='link')aFurniture(ctx,m,A);}
+  drawAnomalyRoom(ctx, R);
   for(i=0;i<R.desks.length;i++){
     var dk=R.desks[i],dr=dk.seat;
     aRound(ctx,dk.x+1.1,dk.y+1.6,dk.w,dk.h,1,'rgba(0,0,0,.24)',null);
@@ -5892,6 +5908,130 @@ function drawAnaNote(){
   if (ANA.read){ anLabel(ctx,'（看过了）',x,y-h/2-4,3.6,'rgba(210,200,180,.9)'); }
   ctx.restore();
 }
+/* 异象生效时房间里的实体变化。在室内绘制流程里调用。
+   只有"玩家就在现场"的时候才画 —— 别的楼层不该受影区。 */
+function drawAnomalyRoom(ctx, R){
+  if (!R || !AN.cur) return;
+  var a = AN.cur, i, m, x, y, w, h;
+  var host = R.host || '';
+  var sameRoom = (S.mode === 'in' && S.room === R.id);
+
+  /* ---------- 食堂盛宴：暖光 + 满桌的菜 ---------- */
+  if (a === 'feast' && host === 'canteen'){
+    var k = clamp((AN.t||0)/2.5, 0, 1);                 // 慢慢亮起来
+    var flick = 0.92 + Math.sin(MARK_T*3.1)*0.05 + Math.sin(MARK_T*7.7)*0.03;
+    /* ① 整间屋子罩一层暖黄 */
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255,186,96,' + (0.16*k*flick) + ')';
+    ctx.fillRect(R.ox, R.oy, R.w, R.h);
+    /* ② 灯下的光池 */
+    for (i = 0; i < (R.lamps ? R.lamps.length : 0); i++){
+      var lp = R.lamps[i];
+      var rad = Math.max(lp.w, lp.h) * 4.2;
+      var g = ctx.createRadialGradient(lp.x, lp.y, 0, lp.x, lp.y, rad);
+      g.addColorStop(0, 'rgba(255,214,140,' + (0.34*k*flick) + ')');
+      g.addColorStop(0.55, 'rgba(255,178,92,' + (0.15*k) + ')');
+      g.addColorStop(1, 'rgba(255,178,92,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(lp.x, lp.y, rad, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+    /* ③ 每张桌子上摆菜 —— 用确定性的随机，别每帧跳 */
+    var COL = ['#d8563c','#e0a33a','#7fae52','#c8663f','#e6d5a8','#a8503c','#d9b45c','#8f9e4e'];
+    for (i = 0; i < R.misc.length; i++){
+      m = R.misc[i];
+      if (m.k !== 'table') continue;
+      var seed = (m.x*7.13 + m.y*3.71) % 1;
+      var n = 3 + Math.floor(Math.abs(seed)*3);
+      for (var q = 0; q < n; q++){
+        var sd = Math.abs((m.x*13.1 + m.y*29.7 + q*17.3) % 1);
+        var sd2 = Math.abs((m.x*41.7 + m.y*11.3 + q*7.9) % 1);
+        var fx = m.x + m.w*(0.18 + sd*0.64);
+        var fy = m.y + m.h*(0.20 + sd2*0.60);
+        var fr = Math.min(m.w, m.h)*0.17;
+        /* 盘子 */
+        ctx.fillStyle = 'rgba(242,236,222,' + (0.85*k) + ')';
+        ctx.beginPath(); ctx.ellipse(fx, fy, fr*1.25, fr*0.85, 0, 0, TAU); ctx.fill();
+        /* 菜 */
+        ctx.fillStyle = COL[(q + Math.floor(sd*8)) % COL.length];
+        ctx.globalAlpha = 0.9*k;
+        ctx.beginPath(); ctx.ellipse(fx, fy, fr*0.78, fr*0.52, 0, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 1;
+        /* 冒的热气 */
+        if (q % 2 === 0){
+          ctx.strokeStyle = 'rgba(255,244,226,' + (0.20*k) + ')';
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          var hy = fy - fr*1.1 - ((MARK_T*8 + q*11) % 9);
+          ctx.moveTo(fx, fy - fr*0.9);
+          ctx.quadraticCurveTo(fx + 2.2, hy, fx - 1.4, hy - 3.2);
+          ctx.stroke();
+        }
+      }
+    }
+    return;
+  }
+
+  /* ---------- 冷库：满屋结霜，人形挂着 ---------- */
+  if (a === 'cold' && host === 'canteen'){
+    ctx.save();
+    ctx.fillStyle = 'rgba(196,224,236,0.20)';
+    ctx.fillRect(R.ox, R.oy, R.w, R.h);
+    ctx.strokeStyle = 'rgba(232,244,250,0.34)';
+    ctx.lineWidth = 1.1;
+    for (i = 0; i < 22; i++){
+      var cx2 = R.ox + ((i*137)%100)/100*R.w, cy2 = R.oy + ((i*79)%100)/100*R.h;
+      ctx.beginPath();
+      ctx.moveTo(cx2, cy2); ctx.lineTo(cx2+2.4, cy2+5.5); ctx.lineTo(cx2-1.6, cy2+9);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* ---------- 天花板渗水：地上有水渍，天花板在滴 ---------- */
+  if (a === 'leak' && AN.spots && AN.spots.length){
+    for (i = 0; i < AN.spots.length; i++){
+      var sp = AN.spots[i];
+      ctx.fillStyle = 'rgba(52,58,64,0.30)';
+      ctx.beginPath(); ctx.ellipse(sp[0], sp[1], 13, 8, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(30,34,38,0.24)';
+      ctx.beginPath(); ctx.ellipse(sp[0], sp[1], 7, 4.2, 0, 0, TAU); ctx.fill();
+      /* 正在滴 */
+      var drip = (MARK_T*1.4 + i*0.37) % 1;
+      ctx.fillStyle = 'rgba(150,170,184,' + (0.65*(1-drip)) + ')';
+      ctx.beginPath(); ctx.ellipse(sp[0], sp[1] - 24*(1-drip), 1.1, 2.0, 0, 0, TAU); ctx.fill();
+    }
+  }
+
+  /* ---------- 实验楼仪式：圈已经用 drawAnomalyWorld 画了，这里补房间的暗红 ---------- */
+  if (a === 'rite' && host === 'lab'){
+    ctx.save();
+    ctx.fillStyle = 'rgba(96,26,22,0.13)';
+    ctx.fillRect(R.ox, R.oy, R.w, R.h);
+    ctx.restore();
+  }
+
+  /* ---------- 被划掉的名字：墙上的名册 ---------- */
+  if (a === 'roster' && sameRoom && AN.rosX !== undefined){
+    var rx = AN.rosX, ry = AN.rosY;
+    ctx.save();
+    ctx.fillStyle = 'rgba(238,232,214,0.92)';
+    ctx.fillRect(rx-11, ry-15, 22, 30);
+    ctx.strokeStyle = 'rgba(60,52,42,0.7)'; ctx.lineWidth = 0.9;
+    ctx.strokeRect(rx-11, ry-15, 22, 30);
+    ctx.strokeStyle = 'rgba(96,90,78,0.55)'; ctx.lineWidth = 0.7;
+    for (i = 0; i < 9; i++){
+      var ly = ry - 11 + i*2.9;
+      ctx.beginPath(); ctx.moveTo(rx-7, ly); ctx.lineTo(rx+7, ly); ctx.stroke();
+    }
+    /* 一道红杠 */
+    ctx.strokeStyle = 'rgba(176,48,40,0.92)'; ctx.lineWidth = 2.1;
+    ctx.beginPath(); ctx.moveTo(rx-8, ry+2); ctx.lineTo(rx+8, ry+4.5); ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawAnomalyWorld(ctx){
   var id=AN.cur;if(!id)return;
   var pos=anPosition();if(!pos)return;
@@ -7065,16 +7205,26 @@ function drawNight(){
   }
 }
 /* ============================ 开发者模式 ============================ */
+var DEV_KEY='wdfz_dev_v1';
 var DEV={ on:false, pv:null, pvT:0, showVis:false, showOcc:false, raw:false, el:null, tag:null, pvl:null,
           inv:true, noAnomaly:false, pw:false };
+/* 密码输对一次就一直开着，直到点面板上的「关闭开发者模式」。存在 localStorage 里。 */
+function devSave(){ try{ localStorage.setItem(DEV_KEY, DEV.on?'1':'0'); }catch(e){} }
+function devLoad(){ try{ return localStorage.getItem(DEV_KEY)==='1'; }catch(e){ return false; } }
+function devApply(){
+  if (DEV.el) DEV.el.classList.toggle('on', DEV.on);
+  if (DEV.tag) DEV.tag.classList.toggle('on', DEV.on);
+  var pp=document.getElementById('devp'); if (pp) pp.classList.toggle('on', DEV.on);
+  if (DEV.on && !DEV.el) devBuild();
+}
 function askDevPassword(){
   if (DEV.on){ devToggle(); return; }
   if (DEV.pw) return;
   DEV.pw=true;
-  var v = (typeof prompt==='function') ? prompt('开发者密码（回车取消）') : null;
+  var v = (typeof prompt==='function') ? prompt('开发者密码（回车取消）\n输对一次之后会一直开着，直到你点面板上的「关闭开发者模式」') : null;
   DEV.pw=false;
   if (v===null) return;
-  if (String(v).trim()==='114514') devToggle();
+  if (String(v).trim()==='114514'){ DEV.on=true; devApply(); devSave(); toast('开发者模式：开（会一直开着）'); }
 }
 var DEV_AN=[
  ['rain','大暴雨'],['moth','蛾群'],['rite','实验楼仪式现场'],['feast','食堂盛宴'],
@@ -7082,14 +7232,15 @@ var DEV_AN=[
  ['bell13','钟声 13 下'],['leak','天花板渗水'],['exercise','操场上做操的人'],['chalk','黑板上的死期'],
  ['hand','隔间递物'],['bells','车棚齐鸣'],['roster','被划掉的名字'],['shadowx','影子不同步'],
  ['cold','冷库人形'],['raindots','雨滴写字'],['shifting','窗外的楼在移动'],['repeat','重复的一句话'],
- ['double','天台的第二个你'],['lights','熄灯后的走廊灯']
+ ['double','天台的第二个你'],['lights','熄灯后的走廊灯'],['taps','被拍肩膀']
 ];
 function devToast(txt){ if(DEV.pvl){ DEV.pvl.textContent=txt; DEV.pvl.classList.add('on'); } }
 function devPlay(id,name){ DEV.pv=id; DEV.pvT=0; devToast(name+'   （'+name.length+'）'); SFX.ui(); }
 function devBuild(){
   var el=document.getElementById('devp'); if(!el||DEV.el) return; DEV.el=el;
   var h='';
-  h+='<h3>异象　22 个（点一下播放 8 秒）</h3><div class="grid2" id="dev-an"></div>';
+  h+='<div class="devhead"><b>开发者模式</b><button id="dev-off" type="button">关闭开发者模式</button></div>';
+  h+='<h3>异象　23 个（点一下播放 8 秒）</h3><div class="grid2" id="dev-an"></div>';
   h+='<h3>死亡动画</h3><div class="grid2" id="dev-death"></div>';
   h+='<h3>转场</h3><div class="grid2" id="dev-tr"></div>';
   h+='<h3>传送</h3><div class="grid2" id="dev-tp"></div>';
@@ -7132,6 +7283,10 @@ function devBuild(){
   tv.oninput=function(){ S.tsec=(+tv.value)*60; document.getElementById('dv-timet').textContent=fmtTime(S.tsec); };
   rv.oninput=function(){ DEV.rate=+rv.value; document.getElementById('dv-ratet').textContent=(+rv.value===0?'默认':rv.value+'×'); };
   DEV.pvl=document.getElementById('devpv');
+  var off=document.getElementById('dev-off');
+  if (off) off.onclick=function(){
+    DEV.on=false; devApply(); devSave(); toast('开发者模式：关（下次打开还是关的）');
+  };
   DEV.tag=document.getElementById('devtag');
 }
 function devTeleport(id){
@@ -7439,9 +7594,7 @@ function devUpdate(dt){
 }
 function devToggle(){
   devBuild(); DEV.on=!DEV.on;
-  if (DEV.el) DEV.el.classList.toggle('on', DEV.on);
-  if (DEV.tag) DEV.tag.classList.toggle('on', DEV.on);
-  SFX.ui();
+  devApply(); devSave();
 }
 
 function render(){
@@ -7811,7 +7964,7 @@ function ask(text,opts,cb){
   }
   DLG.open=true; DLG.t=0; DLG.dur=0;
 }
-function dlgClose(){ elDlgC.innerHTML=''; DLG.open=false; DLG.cb=null; DLG.count=0; }
+function dlgClose(){ elDlgC.innerHTML=''; DLG.open=false; DLG.cb=null; DLG.count=0; THINKING=false; }
 var SUB={ t:0, dur:0 };
 function os(text,dur){ subShow(text,dur||4.2); }
 function dlgUpdate(dt){
@@ -7825,7 +7978,7 @@ function dlgUpdate(dt){
   }
 }
 function toast(msg){ elToast.textContent=msg; elToast.classList.add('show'); S.toastT=2.6; }
-function pickChoice(i){ if(!DLG.open || !DLG.cb || i<0 || i>=DLG.count) return; var cb=DLG.cb; dlgClose(); SFX.ui(); cb(i); }
+function pickChoice(i){ if(!DLG.open || !DLG.cb || i<0 || i>=DLG.count) return; var cb=DLG.cb; dlgClose(); THINKING=false; SFX.ui(); cb(i); }
 function roomLabel(){
   if (S.mode==='out') return '武大附中 · 校园';
   var R=INTERIORS[S.room]; if(!R) return '';
@@ -7979,12 +8132,12 @@ window.__dbg={ I:INTERIORS, O:OBJ, tileAt:tileAt, doorOf:doorOf, SC:SC, AN:AN, S
                interact:function(d){ tryInteract(d); }, go:go, newDream:newDream, proNext:proNext,
                resetGame:resetGame, castRay:castRay, BASE:BASE, OCC:OCC, VIS:VIS,
                findTileIn:findTileIn, bridgeTarget:bridgeTarget,
-               escape:escape, ENDINGS:ENDINGS, RT:RT, get HANDSLOT(){ return HANDSLOT; }, needWhere:needWhere, update:update, get BAGSEL(){ return BAGSEL; }, bagSel:bagSel, renderBag:renderBag, toggleBag:toggleBag, roofTick:roofTick, twinPos:twinPos, twinNear:twinNear, twinLook:twinLook, TWIN:TWIN, drawBody:drawBody, get TWIN_TURN(){return TWIN_TURN;}, get TWIN_OFF(){return TWIN_OFF;}, get TWIN_MOUTH(){return TWIN_MOUTH;}, twinBase:twinBase, resetTwin:resetTwin, flashBack:flashBack, AN_ID:AN_ID, tryPickup:tryPickup, throwSelected:throwSelected, anStart:anStart, anEnd:anEnd, ENDSC:ENDSC,
+               escape:escape, ENDINGS:ENDINGS, RT:RT, get HANDSLOT(){ return HANDSLOT; }, needWhere:needWhere, update:update, get BAGSEL(){ return BAGSEL; }, bagSel:bagSel, renderBag:renderBag, toggleBag:toggleBag, roofTick:roofTick, twinPos:twinPos, twinNear:twinNear, twinLook:twinLook, TWIN:TWIN, drawBody:drawBody, get TWIN_TURN(){return TWIN_TURN;}, get TWIN_OFF(){return TWIN_OFF;}, get TWIN_MOUTH(){return TWIN_MOUTH;}, twinBase:twinBase, resetTwin:resetTwin, devApply:devApply, devToggle:devToggle, devBuild:devBuild, askDevPassword:askDevPassword, DEV:DEV, DEV_KEY:DEV_KEY, get THINKING(){return THINKING;}, setThinking:function(v){ THINKING=!!v; }, dlgClose:dlgClose, thinkOpen:thinkOpen, flashBack:flashBack, AN_ID:AN_ID, DEV_AN:DEV_AN, K:K, get S(){ return S; }, tryPickup:tryPickup, throwSelected:throwSelected, anStart:anStart, anEnd:anEnd, ENDSC:ENDSC,
                useCar:useCar, useData:useData, useTrash:useTrash, checkGate:checkGate,
                searchShelf:searchShelf, throwItem:throwItem, eggTick:eggTick, NOTES:NOTES, OPT:OPT,
                enterRoom:enterRoom, exitRoom:exitRoom, buildInterior:buildInterior, dropCache:dropCache,
                flashBack:flashBack, FLASH:FLASH, USE:USE, MARKS:MARKS, useItem:useItem, ITEMS:ITEMS,
-               pianoStart:pianoStart, pianoStop:pianoStop, PIANO:PIANO, MOVE:MOVE, mtof:mtof, drawAnomalyWorld:drawAnomalyWorld, drawAnomalyFP:drawAnomalyFP, anPosition:anPosition, menuSync:menuSync, menuSelect:menuSelect,
+               pianoStart:pianoStart, pianoStop:pianoStop, PIANO:PIANO, MOVE:MOVE, mtof:mtof, drawAnomalyRoom:drawAnomalyRoom, drawAnomalyWorld:drawAnomalyWorld, drawAnomalyFP:drawAnomalyFP, anPosition:anPosition, menuSync:menuSync, menuSelect:menuSelect,
                get BW(){ return BW; }, itemHint:itemHint, useData:useData,
                MAPV:MAPV, VIEW:VIEW, Q:Q, applyOpt:applyOpt, drawFullMap:drawFullMap, objById:objById, exitRoom:exitRoom,
                TITLE:TITLE, titlePick:titlePick, titleItems:titleItems, hidePro:hidePro, DIFF:DIFF, solidIndoor:solidIndoor, MISCMAP:MISCMAP,
