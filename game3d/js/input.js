@@ -7,6 +7,9 @@ function initInput(){
   window.addEventListener('keydown',function(e){
     var k=e.key.toLowerCase();
     if(PRO.on){ e.preventDefault(); if(!e.repeat) proNext(); return; }
+    if(typeof PC!=='undefined'&&PC.on){                 /* 机房小游戏开着：按键全归它 */
+      e.preventDefault(); if(!e.repeat) PCGAME.key(k); return;
+    }
     KEY[k]=true;
     if(['w','a','s','d',' ','arrowup','arrowdown','arrowleft','arrowright'].indexOf(k)>=0) e.preventDefault();
     if(e.key==='Tab'){ e.preventDefault(); if(e.repeat) return; UI.toggle('bag'); return; }
@@ -15,7 +18,6 @@ function initInput(){
     if(k==='j'){ UI.toggle('note'); }
     if(k==='m'){ UI.toggle('mapv'); }
     if(e.key==='F2'){ e.preventDefault(); if(typeof Dev!=='undefined') Dev.toggle(); return; }
-    if(k==='escape'&&typeof PC!=='undefined'&&PC.on){ e.preventDefault(); PCGAME.stop(); return; }
     if(k==='escape'){
       if(UI.openPanel==='set'){ UI.close('set'); if(PAUSE.on) UI.open('pause'); return; }
       Game.pauseToggle();
@@ -61,7 +63,7 @@ function initInput(){
   window.addEventListener('pointerdown',function(e){
     if(e.target.closest && e.target.closest('button,.hslot,#stick,#tRun,#tAct,#tPause,.close,#tcol')) return;
     if(document.pointerLockElement===cv) return;
-    if(UI.anyOpen()||PAUSE.on||S.dead) return;
+    if(UI.anyOpen()||PAUSE.on||S.dead||(typeof PC!=='undefined'&&PC.on)) return;
     if(S.screen==='play'&&S.mode){ LOOKDRAG.on=true; LOOKDRAG.x=e.clientX; LOOKDRAG.y=e.clientY; lookId=e.pointerId; }
   });
   window.addEventListener('pointermove',function(e){

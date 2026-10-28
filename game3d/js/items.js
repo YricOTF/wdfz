@@ -31,7 +31,7 @@ function removeItem(id){
 function toggleTorch(){
   if(!hasItem('torch')){ toast('没有手电筒'); return; }
   USE.torch=!USE.torch;
-  GLR.torch.intensity=USE.torch?55:0;
+  GLR.torch.intensity=USE.torch?62:0;
   toast(USE.torch?'手电：开':'手电：关');
   SFX.click();
 }
@@ -45,7 +45,7 @@ function useItem(id){
   if(!id||!hasItem(id)) return;
   var nm=ITEMS[id]?ITEMS[id].n:id;
   if(id==='torch'){ toggleTorch(); return; }
-  if(id==='phone'){ USE.phone=!USE.phone; GLR.torch.intensity=USE.phone?22:(USE.torch?55:0); toast(USE.phone?'手机屏幕：亮':'手机屏幕：灭'); return; }
+  if(id==='phone'){ USE.phone=!USE.phone; GLR.torch.intensity=USE.phone?25:(USE.torch?62:0); toast(USE.phone?'手机屏幕：亮':'手机屏幕：灭'); return; }
   if(id==='brolly'){ USE.brollyShield=!USE.brollyShield; toast(USE.brollyShield?'撑开伞':'收起伞'); return; }
   if(id==='pill'){ S.san=Math.min(100,S.san+18); removeItem('pill'); os('我：药片很苦。手不抖了。',3); toast('药片 · SAN +18'); return; }
   if(id==='snack'){ S.stam=Math.min(100,S.stam+35); removeItem('snack'); os('我：甜的。',2.4); toast('士力架 · 体力 +35'); return; }
@@ -54,7 +54,7 @@ function useItem(id){
   if(id==='compass'){ useCompass(); return; }
   if(id==='memo'){
     S.spots.data=1; S.spots.comp=1; UI.spotsDirty=true;
-    os('我：纸条上是一行潦草的字：「实验楼 3F 网络中心 → 行政楼 3F 门禁机 → 西小门。钥匙在保安室。」最后一个字被划得很深。',6);
+    os('我：纸条上是一行潦草的字：「实验楼 3F 网络中心 → 行政楼 3F 门禁机 → 西小门。钥匙在行政楼 2F。」最后一个字被划得很深。',6);
     toast('记下了：机房 · 数据终端');
     return;
   }

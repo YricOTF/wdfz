@@ -474,6 +474,7 @@ function boot(){
   buildRoomBounds();
   initGL();
   initInput();
+  try{ initPcGame(); }catch(e){}
   document.getElementById('btncont').style.display=loadGame()?'block':'none';
   window.addEventListener('visibilitychange',function(){
     if(document.hidden){ if(S.screen==='play'&&!PAUSE.on&&!S.dead) Game.pauseToggle(); }

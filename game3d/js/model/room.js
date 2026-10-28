@@ -9,7 +9,7 @@
 
 function roomTheme(R){
   var t={floor:'ftile', fcol:PALETTE.floor, wall:PALETTE.wall, wallMat:'plaster', low:0x8b867e, skirt:0x242c32, ceil:0x3a4248, rail:0x6a5a48};
-  if(R.id==='garage1'){ t.floor='fconcrete'; t.fcol=0x6a6a66; t.wall=0x8a8a84; t.wallMat='concrete'; t.low=0x4a4a46; t.ceil=0x2a2e30; }
+  if(R.id==='garage1'){ t.floor='fconcrete'; t.fcol=0x6a6a66; t.wall=0x8a8a84; t.wallMat='concrete'; t.low=0x3f574a; t.rail=0xb89a30; t.skirt=0x2a2c2a; t.ceil=0x2a2e30; }   /* 墙下半截绿漆、黄腰线 */
   else if(R.id==='trash1'){ t.floor='fconcrete'; t.fcol=0x7a7a72; t.wall=0xa8aca0; t.low=0x6a7068; }
   else if(R.host==='bell'){ t.floor='fstone'; t.fcol=0x8a8478; t.low=0x6a5a4a; t.ceil=0x2a2420; }
   else if(R.id==='gear1'){ t.floor='fwood'; t.fcol=0x9a7a52; t.wall=0x27502f; t.low=0x1e3e24; }
@@ -31,7 +31,7 @@ function buildRoomGeometry(R){
   var TH=roomTheme(R);
   function CX(c){ return (c+0.5)*tw-halfW; }
   function CZ(r){ return (r+0.5)*th-halfH; }
-  var c={R:R,K:K,W:W,H:H,tw:tw,th:th,halfW:halfW,halfH:halfH,CX:CX,CZ:CZ,theme:TH,
+  var c={R:R,K:K,W:W,H:H,tw:tw,th:th,halfW:halfW,halfH:halfH,CX:CX,CZ:CZ,theme:TH,extras:[],
     solid:function(cx,cz,sx,sz){ R.propExtra.push({x0:cx-sx/2,x1:cx+sx/2,z0:cz-sz/2,z1:cz+sz/2}); },
     ao:function(cx,cz,sx,sz,s){ K.g('decal').aoPatch(cx,cz,sx,sz,s); }};
   function G(y,x){ return (y>=0&&x>=0&&y<H&&x<W)?R.grid[y][x]:null; }
@@ -128,7 +128,9 @@ function buildRoomGeometry(R){
     }
   }
   roomDecor(c,isRoof);
-  return K.build();
+  var grp=K.build(), ei;
+  for(ei=0;ei<c.extras.length;ei++) grp.add(c.extras[ei]);   /* 带贴图的牌子（车库的区号、安全出口） */
+  return grp;
 }
 
 /* ---- 门：墙厚 1 米，门洞两侧有门套；门扇在 +z 一侧（走廊那边）；开着的门扇转 90° 贴在门洞边 ---- */
@@ -432,24 +434,7 @@ function roomDecor(c,isRoof){
     c.solid(-2.4,1.4,0.8,0.6);
   }
 
-  if(R.id==='garage1'){
-    /* 车位线、柱子上的黄黑警示带、顶上的管道 */
-    var gy, gxx;
-    for(gxx=0;gxx<W;gxx++) for(gy=0;gy<H;gy++){
-      if(R.grid[gy][gxx]==='V'){
-        var vx=CX(gxx), vz=CZ(gy);
-        K.g('decal').quad(vx-2.2,vz-1.3,vx+2.2,vz-1.3,vx+2.2,vz-1.22,vx-2.2,vz-1.22,0.006,0xd8d4c4);
-        K.g('decal').quad(vx-2.2,vz+1.22,vx+2.2,vz+1.22,vx+2.2,vz+1.3,vx-2.2,vz+1.3,0.006,0xd8d4c4);
-        K.g('decal').quad(vx-2.28,vz-1.3,vx-2.2,vz-1.3,vx-2.2,vz+1.3,vx-2.28,vz+1.3,0.006,0xd8d4c4);
-      }
-      if(R.grid[gy][gxx]==='#'&&gxx>0&&gy>0&&gxx<W-1&&gy<H-1){
-        var pcx=CX(gxx), pcz=CZ(gy), kb;
-        for(kb=0;kb<4;kb++) K.box('plastic',pcx,0.15+kb*0.25,pcz,1.02,0.12,1.02,kb%2?0x1a1a18:0xc8a830,1.0);
-      }
-    }
-    for(gy=3;gy<H-2;gy+=7) K.rod('metal',-halfW+1,2.82,CZ(gy),halfW-1,2.82,CZ(gy),0.08,0.08,8,0x4a4e50);
-    K.g('decal').quad(-halfW+1,CZ(13)-0.06,halfW-4,CZ(13)-0.06,halfW-4,CZ(13)+0.06,-halfW+1,CZ(13)+0.06,0.006,0xc8b24a);   /* 车道中线 */
-  }
+  if(R.id==='garage1') garageDecor(c);      /* 见 model/garage.js */
 
   /* 吸顶灯盘 */
   if(!isRoof&&R.host!=='bell'){

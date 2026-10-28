@@ -69,8 +69,9 @@ function initGL(){
   moon.castShadow=false;
   scene.add(moon);
 
-  var torch=new THREE.SpotLight(0xdceaf0,0,20,0.42,0.62,1.1);
-  torch.position.set(0,0,0);
+  /* 手电：光源放在镜头后面 1.2 米，边缘更软 —— 以前贴着墙一照就是一整团白 */
+  var torch=new THREE.SpotLight(0xdceaf0,0,22,0.42,0.85,1.1);
+  torch.position.set(0,0,1.2);
   torch.castShadow=false;
   torch.shadow.mapSize.width=1024;
   torch.shadow.mapSize.height=1024;

@@ -178,7 +178,25 @@ body.touch #cross{display:none!important}
   justify-content:center;gap:14px;background:rgba(2,6,9,.94)}
 #pcgame .pch{font-size:13px;letter-spacing:5px;color:#9fe3c2}
 #pccv{border:1px solid rgba(130,180,155,.4);background:#0a1210}
-#pcgame .pcf{font-size:10px;letter-spacing:1px;color:#6d8580}
+#pcgame .pcf{font-size:10px;letter-spacing:1px;color:#6d8580;text-align:center;padding:0 16px}
+#pccv{width:min(320px,62vmin);height:min(320px,62vmin);touch-action:none}
+#pcgame button{font-family:inherit;background:rgba(20,48,38,.55);color:#b6d4c5;border:1px solid rgba(130,180,155,.4);
+  cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#pcgame button:active{background:rgba(120,200,170,.30);border-color:#79c8a4}
+#pcgame .pcb{display:flex;gap:12px}
+#pcgame .pcb button{font-size:13px;letter-spacing:3px;padding:9px 26px}
+#pcgame .pcpad{display:none;align-items:center;gap:8px}
+#pcgame .pcpad div{display:flex;flex-direction:column;gap:8px}
+#pcgame .pcpad button{width:54px;height:46px;font-size:18px;border-radius:8px}
+body.touch #pcgame .pcpad{display:flex}
+body.touch #pcgame{gap:10px}
+@media (max-height:560px){                     /* 横屏手机：方向键在左、画面在中间、按钮在右 */
+  #pcgame{flex-direction:row;gap:26px}
+  #pcgame .pch,#pcgame .pcf{display:none}
+  #pccv{width:min(320px,84vh);height:min(320px,84vh)}
+  #pcgame .pcpad{order:-1}
+  #pcgame .pcb{flex-direction:column}
+}
 #dev{position:fixed;left:14px;top:104px;z-index:44;display:none;width:336px;
   background:rgba(3,9,7,.94);border:1px solid rgba(130,180,155,.34);padding:12px 14px;
   font-size:11px;letter-spacing:1px;color:#a8ccbc}

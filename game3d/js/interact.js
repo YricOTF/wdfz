@@ -92,11 +92,19 @@ function useFacility(ch,R){
     S.san=Math.min(100,S.san+2);
   }else if(ch==='K'){
     if(R.host==='admin'){
-      os('我：办公桌上摊着一叠表格。最上面那张的名字被涂掉了。',3.6);
+      if(R.id==='admin2'&&!hasItem('roomkey')){       /* 机房钥匙：信息中心老师借走了，压在他抽屉里 */
+        addItem('roomkey');
+        os('我：抽屉没锁。一把铜钥匙压在一叠表格下面，塑料标签上写着「机房」。桌角的名牌：信息中心。',4.6);
+      }else{
+        os('我：办公桌上摊着一叠表格。最上面那张的名字被涂掉了。',3.6);
+      }
       if(!RT.adminDesk){ RT.adminDesk=1; addClue('office'); toast('办公室 · 线索 +1'); }
     }else{
       if(R.floor===5){ os('我：讲台上摊着谱子。第三乐章那一页被折了角。',3.4); }
-      else if(R.floor===3){ os('我：教师台上摊着一本「机房钥匙借用登记」。最后一页是空的。',3.6); }
+      else if(R.floor===3){
+        os('我：教师台上摊着一本「机房钥匙借用登记」。最后一行：信息中心，行政楼 2F。「归还」那一栏是空的。',4.4);
+        if(!hasItem('roomkey')) addClue('roomkey');
+      }
       else { os('我：教师台上还留着上一节课的东西。烧杯里的水是温的。',3.4); }
       if(R.floor===2&&!RT.labReagent){ RT.labReagent=1; addItem('goggles'); }
     }
@@ -224,7 +232,7 @@ function tryInteract(){
     var _need=doorLockNeed(R,hit.c,hit.r);
     if(_need&&!hasItem(_need)){
       os('我：门锁着。锁孔是圆的，很新。',2.8);
-      toast('需要「'+ITEMS[_need].n+'」· 保安室大概有');
+      toast('需要「'+ITEMS[_need].n+'」· 隔壁教师台上有借用登记');
       addClue('roomkey');
       return;
     }
@@ -274,16 +282,14 @@ function tryInteract(){
   }
   if(ch==='b'){ os('我：床。可是现在不能睡。',2.4); return; }
   if(ch==='k'&&R.host==='guard'){
-    if(!hasItem('roomkey')){
-      addItem('roomkey');
-      os('我：柜台下面挂着一串钥匙。其中一把的标签上写着「机房」。',4.2);
-      return;
-    }
+    /* 保安岗只管车：车钥匙在这儿。机房钥匙那一格是空的，被行政楼的老师借走了 */
     if(!hasItem('key')){
       addItem('key');
-      os('我：旁边还挂着一串车钥匙。牌号刻在环上——是车库那两辆的。',4.4);
+      os('我：柜台下面的钥匙板上挂着一串车钥匙。牌号刻在环上——是车库那两辆的。'+(hasItem('roomkey')?'':'旁边「机房」那一格是空的，挂钩上夹着一张借条：信息中心，行政楼 2F。'),5.2);
+      if(!hasItem('roomkey')) addClue('roomkey');
       return;
     }
+    if(!hasItem('roomkey')){ os('我：「机房」那一格还是空的。借条上写着：信息中心，行政楼 2F。',3.6); addClue('roomkey'); return; }
     os('我：柜台下面没有别的了。',2.0); return;
   }
   if(ch==='t'||ch==='k'){ os('我：没有能吃的。',2.0); return; }
