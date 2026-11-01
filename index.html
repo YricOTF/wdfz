@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>武汉大学附属中学 · 里世界 3D</title>
+<!-- iOS：加到主屏幕后全屏启动（没有地址栏/工具栏），状态栏压在游戏画面上 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="里世界">
+<meta name="theme-color" content="#04070a">
+<meta name="format-detection" content="telephone=no">
+<link rel="stylesheet" href="game3d/css/game.css">
+<link rel="stylesheet" href="game3d/css/ui.css">
+</head>
+<body>
+<canvas id="cv" tabindex="0" aria-label="3D 游戏画面，可拖动转动视角"></canvas>
+<button id="fullscreen-toggle" class="screen-control" type="button" onclick="goFullscreen()" aria-pressed="false">进入全屏</button>
+<div id="lookhint" hidden>点击画面恢复鼠标环视 · 按住拖动也可转向</div>
+<div id="qualityHint" role="status" hidden><span>画面持续卡顿，建议降低画质。</span><button type="button" onclick="Settings.q(QUALITY-1)">降低一档</button><button type="button" onclick="QualityWatch.dismiss()" aria-label="关闭画质建议">×</button></div>
+<div id="scan"></div><div id="vig"></div><div id="flash"></div>
+<div id="fade"></div><div id="cutfade"></div><div id="cutbars"><i></i><i></i></div>
+<div id="hud">
+  <div class="tl hud-card" id="status">
+    <div class="hc-top"><div id="clock">11:40</div><div id="secclock" hidden></div></div>
+    <div id="period" class="ok">早读 · 教室</div>
+    <div id="place">武大附中 · 校园</div>
+    <div id="sanfeel" role="status" aria-live="polite">呼吸平稳</div>
+    <button id="lessonOpen" type="button" onclick="LESSON.open()" hidden>看课桌 · R</button>
+    <button id="investigateOpen" type="button" onclick="Investigation.openDesk()" hidden>看停车单 · R</button>
+    <div class="hc-meter" id="stamrow" hidden><span>体力</span><div id="stamwrap"><div id="stambar"></div></div></div>
+  </div>
+  <div class="bl"><canvas id="mini" width="150" height="150"></canvas></div>
+  <div class="bc"><div id="hot"></div></div>
+  <div class="br" id="keyhelp"><kbd>E</kbd>交互 <kbd>F</kbd>手电 <kbd>1</kbd><kbd>2</kbd>快捷栏 <kbd>Tab</kbd>手册 <kbd>Esc</kbd>暂停</div>
+</div>
+<div id="cross"></div><div id="hideslits" aria-hidden="true"></div><div id="searchring" aria-hidden="true"></div>
+<div id="lidtop"></div><div id="lidbot"></div>
+<div id="pro"><div id="protext"></div><div id="prohint">点击 / 空格 继续</div></div>
+<div id="skip"><b></b><i></i><em></em></div>
+<div id="banner"></div>
+<div id="drivehud" role="status" hidden></div>
+<div id="prompt"></div>
+<div id="sub"></div>
+<div id="choices"></div>
+<div id="lesson" role="dialog" aria-labelledby="lessonTitle" hidden><div class="lesson-card">
+  <h2 class="lesson-title" id="lessonTitle">课桌上的字</h2><p class="lesson-text"></p><div class="lesson-options"></div>
+  <p id="lessonTime"></p><button type="button" onclick="LESSON.close(true)">放下 · Esc</button>
+</div></div>
+<div id="toast"></div>
+
+<div id="journal" role="dialog" aria-label="随身手册">
+  <div class="jbox">
+    <div class="jhead">
+      <nav class="jtabs" role="tablist">
+        <button type="button" role="tab" data-tab="bag" onclick="UI.open('bag')">背包<kbd>Tab</kbd></button>
+        <button type="button" role="tab" data-tab="think" onclick="UI.open('think')">思索<kbd>H</kbd></button>
+        <button type="button" role="tab" data-tab="note" onclick="UI.open('note')">笔记<kbd>J</kbd></button>
+        <button type="button" role="tab" data-tab="mapv" onclick="UI.open('mapv')">地图<kbd>M</kbd></button>
+      </nav>
+      <button type="button" class="jclose close" onclick="UI.close(UI.openPanel)" aria-label="关闭手册">✕<kbd>Esc</kbd></button>
+    </div>
+    <div class="jbody">
+      <section class="jpage" id="bag">
+        <div class="bagwrap">
+          <div class="g" id="bags"></div>
+          <div class="bagside"><div class="bagname" id="bagname"></div><div class="desc" id="bagdesc"></div><div class="bagacts" id="bagacts"></div></div>
+        </div>
+      </section>
+      <section class="jpage" id="think"><div class="jlead" id="thinkhint"></div><div id="ideas"></div></section>
+      <section class="jpage" id="note"><div class="notefind"><label for="notequery">检索</label><input id="notequery" type="search" maxlength="80" placeholder="地点、物品或关键词" oninput="UI.renderNote()" autocomplete="off"></div><div id="notein"></div></section>
+      <section class="jpage" id="mapv"><div id="maptools"></div><div id="floormap" hidden></div><div id="mapc"></div><div class="maplegend"><i class="me"></i>你在这里 <i class="mg"></i>校门</div></section>
+    </div>
+  </div>
+</div>
+<div id="pause"><div class="pbox">
+  <div class="ptitle">已暂停</div>
+  <div id="ptalent"></div>
+  <button class="primary" onclick="Game.resume()">继续</button>
+  <button onclick="Game.saveNow()">保存进度</button>
+  <button onclick="UI.open('set')">设置</button>
+  <button onclick="Game.quit()">回到主菜单</button>
+  <div class="pkeys" id="pkeys"></div>
+  <details class="playtest-tools"><summary><span>本地试玩记录</span><em id="playtestState">未记录</em></summary>
+    <p>可选，给帮忙试玩的人用：记下卡在哪、用了多久。只存在这一页的内存里，不会上传，刷新就没了。</p>
+    <div class="pt-row"><button id="playtestToggle" type="button" onclick="Playtest.toggle()">开始记录</button><button id="playtestDownload" type="button" onclick="Playtest.export()" disabled>下载 JSON</button></div>
+    <label for="playtestNote">旁观者的备注（卡住、求助、误会了什么）</label><textarea id="playtestNote" maxlength="500" rows="2" placeholder="例如：在二楼找不到楼梯"></textarea>
+    <button type="button" class="pt-note" onclick="Playtest.note()">记下这条</button>
+  </details>
+  <button class="ghost" onclick="Dev.toggle()">调试 (F2)</button>
+</div></div>
+<div id="set"><div class="pbox setbox">
+  <div class="ptitle">设置</div>
+  <section class="sgroup" aria-labelledby="sgView"><h4 id="sgView">画面</h4>
+  <div class="srow"><span>亮度</span><input type="range" id="sBr" min="60" max="150" value="100" oninput="Settings.bright(this.value)" aria-label="亮度"><b id="sBrV">100</b></div>
+  <div class="srow"><span>画质/细节</span><div class="seg" id="sQ">
+    <button onclick="Settings.q(0)">低</button><button onclick="Settings.q(1)">中</button><button onclick="Settings.q(2)">高</button><button onclick="Settings.q(3)">超精细</button><button onclick="Settings.q(4)">真实</button></div></div>
+  <div class="srow"><span>镜头晃动</span><div class="seg" id="sShake">
+    <button onclick="Settings.shake(0)">开</button><button onclick="Settings.shake(1)">关</button></div></div>
+  <div class="srow"><span>画面颗粒</span><div class="seg" id="sGrain">
+    <button onclick="Settings.grain(1)">开</button><button onclick="Settings.grain(0)">关</button></div></div>
+  </section>
+  <section class="sgroup" aria-labelledby="sgSound"><h4 id="sgSound">声音与文字</h4>
+  <div class="srow"><span>音量</span><input type="range" id="sVol" min="0" max="100" value="70" oninput="Settings.vol(this.value)" aria-label="音量"><b id="sVolV">70</b></div>
+  <div class="srow"><span>音乐/环境</span><div class="seg" id="sAmb">
+    <button onclick="Settings.amb(1)">开</button><button onclick="Settings.amb(0)">关</button></div></div>
+  <div class="srow"><span>字幕停留</span><div class="seg" id="sSub">
+    <button onclick="Settings.sub(0)">短</button><button onclick="Settings.sub(1)">标准</button><button onclick="Settings.sub(2)">长</button></div></div>
+  <div class="srow"><label for="textSize">字号</label><input type="range" id="textSize" min="85" max="150" step="5" oninput="Settings.comfort('textSize',this.value)"><b id="textSizeValue"></b></div>
+  <p class="shint" id="textSizeHint">字幕、选项、笔记和课堂纸条一起放大。</p>
+  </section>
+  <section class="sgroup" aria-labelledby="sgCtl"><h4 id="sgCtl">操作</h4>
+  <div class="srow"><label for="mouseSense">鼠标灵敏度</label><input type="range" id="mouseSense" min="25" max="250" step="5" oninput="Settings.comfort('mouseSense',this.value)"><b id="mouseSenseValue"></b></div>
+  <div class="srow"><label for="touchSense">触屏灵敏度</label><input type="range" id="touchSense" min="25" max="250" step="5" oninput="Settings.comfort('touchSense',this.value)"><b id="touchSenseValue"></b></div>
+  <div class="srow"><label for="touchSize">触屏按键大小</label><input type="range" id="touchSize" min="85" max="125" step="5" oninput="Settings.comfort('touchSize',this.value)"><b id="touchSizeValue"></b></div>
+  <details id="layoutSettings" class="sdetail" ontoggle="TouchLayout.paint()"><summary><span>触屏按键位置</span><em>预览与调整</em></summary>
+    <div class="srow"><span>调整</span><div class="seg" id="layoutSeg">
+      <button type="button" data-control="stick" onclick="TouchLayout.pick('stick')">摇杆</button><button type="button" data-control="tAct" onclick="TouchLayout.pick('tAct')">交互键</button><button type="button" data-control="ttop" onclick="TouchLayout.pick('ttop')">手册 / 暂停</button></div>
+      <input type="hidden" id="layoutTarget" value="stick"></div>
+    <div class="srow"><label for="layoutX">左右</label><input id="layoutX" type="range" min="0" max="100" oninput="TouchLayout.change('x',this.value)"><b id="layoutXValue"></b></div>
+    <div class="srow"><label for="layoutY">上下</label><input id="layoutY" type="range" min="0" max="100" oninput="TouchLayout.change('y',this.value)"><b id="layoutYValue"></b></div>
+    <div class="layout-frame"><div id="layoutPreview" role="img" aria-label="触屏按键位置示意图"><i data-control="ttop">手册 / 暂停</i><i data-control="stick">摇杆</i><i data-control="tAct">交互</i></div></div>
+    <p class="shint">按当前横竖屏预览。按键会留在屏幕可触及的范围内，相互碰到时自动让开。</p>
+    <button type="button" class="sreset" onclick="TouchLayout.reset()">触屏布局归位</button>
+  </details>
+  <button type="button" class="sreset" onclick="Settings.resetComfort()">灵敏度、字号、触屏按键恢复默认</button>
+  </section>
+  <div class="sfoot"><button class="primary" onclick="UI.close('set',false);UI.open('pause')">返回</button>
+  <button onclick="Game.resume()">返回游戏</button></div>
+</div></div>
+<div id="die"><div class="t">你 死 了 。</div><div class="m" id="diem"></div>
+  <div id="dieepi"></div><p id="diecause"></p><button onclick="Game.quit()">回到主菜单</button></div>
+<div id="menu">
+  <div class="mtop"><span>武大附中</span><i>/</i><span>校园异闻档案</span><b>单人探索 · 3D</b></div>
+  <div class="mleft">
+    <div class="meyebrow">— THE OTHER SIDE</div>
+    <div class="mtitle">里世界</div>
+    <div class="mschool">武汉大学附属中学</div>
+    <div class="mhook">下课铃响了。<br>没有人站起来。<br>他们都在等你先走。</div>
+    <div class="mcards">
+      <button class="mcard" onclick="Game.start('easy')">
+        <em>01</em><span><b>预知梦</b><i>第一天死去，你会在座位上惊醒（三次）</i></span><u>→</u>
+      </button>
+      <button class="mcard" onclick="Game.start('hard')">
+        <em>02</em><span><b>梦魇</b><i>没有第二次。每个选择都有代价</i></span><u>→</u>
+      </button>
+      <button class="mcard" id="btncont" onclick="Game.continue_()" style="display:none">
+        <em>03</em><span><b>继续上次</b><i>读取最近的存档</i></span><u>→</u>
+      </button>
+    </div>
+    <div class="mends" id="mends" style="display:none"></div>
+    <div class="mios" id="mios">此浏览器不支持网页全屏。iPhone 可通过「分享 → 添加到主屏幕」，再从主屏幕图标打开。</div>
+    <div id="assetNotice" role="status" aria-live="polite" hidden><span id="assetNoticeText"></span><button id="assetRetry" type="button" onclick="Assets.retry()">重试</button></div>
+    <div class="mctl">
+      <label>画面 <select id="mq" onchange="Settings.q(+this.value)">
+        <option value="0">流畅</option><option value="1" selected>均衡</option><option value="2">精细</option><option value="3">超精细</option><option value="4">真实</option></select></label>
+      <label class="mbr">亮度 <input type="range" id="mb" min="60" max="150" value="100" oninput="Settings.bright(this.value)"></label>
+      <a class="mwiki" href="wiki/index.html">游戏 Wiki <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+  <div class="mkeys">WASD 移动 · 鼠标环视 · Shift 奔跑 · E 交互<br>Tab 背包 · F 手电 · H 思索 · J 笔记 · M 地图 · Esc 暂停 · Alt 放出鼠标</div>
+  <div class="mfoot"><span>请记住你回去的路。它会变。</span><i>WUDFZ · FIELD RECORD 001</i></div>
+</div>
+<div id="pcgame"><div class="pch">机房 · 贪吃蛇</div><canvas id="pccv" width="320" height="320"></canvas>
+  <div class="pcf" id="pcf">WASD / 方向键转向 · Esc 退出 · 得分越高 SAN 越多</div><button type="button" id="pcexit" onclick="PCGAME.stop()">退出电脑</button>
+  <button type="button" class="pcx" onclick="PCGAME.stop()" aria-label="退出电脑">✕ 退出</button>
+  <div id="pcpad"><button type="button" data-d="0,-1" aria-label="上">▲</button><button type="button" data-d="-1,0" aria-label="左">◀</button><button type="button" data-d="1,0" aria-label="右">▶</button><button type="button" data-d="0,1" aria-label="下">▼</button></div></div>
+<div id="devbounds" aria-hidden="true"></div>
+<div id="dev" role="dialog" aria-modal="false" aria-labelledby="devTitle" aria-describedby="devhelp">
+  <button type="button" id="devball" aria-label="展开调试面板" aria-expanded="false" aria-controls="devbody" hidden><span aria-hidden="true"></span></button>
+  <header class="devhead">
+    <div class="devdrag" id="devdrag" role="group" tabindex="0" aria-label="移动调试面板：按住拖动，或使用方向键移动，Home 键归位" title="按住拖动；方向键移动，Home 键归位">
+      <span class="devgrip" aria-hidden="true">⠿</span>
+      <div class="devtitle"><div class="deveye">DEVELOPER CONSOLE <span id="devst">· ON</span></div><h2 id="devTitle">调试面板 <span class="devdrag-hint">按住拖动</span></h2></div>
+    </div>
+    <button type="button" class="devcollapse" id="devcollapse" onclick="Dev.setMinimized(true)" aria-label="收起为调试悬浮球" aria-expanded="true" aria-controls="devbody" title="收起为小圆点">收起</button>
+    <button type="button" class="devreset" onclick="Dev.resetPanelPosition()" aria-label="调试面板归位" title="调试面板归位">归位</button>
+    <button type="button" class="devclose" onclick="Dev.close()" aria-label="关闭调试面板">×</button>
+  </header>
+  <div class="devrun"><span id="devrun" role="status"></span><button type="button" id="devfreeze" onclick="Dev.toggleFreeze()">暂停游戏</button></div>
+  <p class="devhelp" id="devhelp">点击画面操作游戏 · Alt 放出鼠标（不暂停）· F2 关闭</p>
+  <nav class="devtabs" aria-label="调试功能">
+    <button type="button" data-dev-tab="status" aria-controls="dev-page-status" aria-pressed="true" onclick="Dev.tab('status')">状态</button>
+    <button type="button" data-dev-tab="scene" aria-controls="dev-page-scene" aria-pressed="false" onclick="Dev.tab('scene')">场景</button>
+    <button type="button" data-dev-tab="items" aria-controls="dev-page-items" aria-pressed="false" onclick="Dev.tab('items')">物品</button>
+    <button type="button" data-dev-tab="events" aria-controls="dev-page-events" aria-pressed="false" onclick="Dev.tab('events')">事件</button>
+    <button type="button" data-dev-tab="tools" aria-controls="dev-page-tools" aria-pressed="false" onclick="Dev.tab('tools')">工具</button>
+  </nav>
+  <div class="devbody" id="devbody" onscroll="Dev.scrollHint()">
+    <section class="devpage" id="dev-page-status">
+      <div class="devsection"><div><h3>当前状态</h3><p>数值随游戏刷新</p></div><span id="devclock"></span></div>
+      <div class="devstats">
+        <div><span>SAN</span><strong id="devsanValue">—</strong></div>
+        <div><span>体力</span><strong id="devstamValue">—</strong></div>
+        <div><span>违规</span><strong id="devviolValue">—</strong></div>
+        <div><span>同化</span><strong id="devttValue">—</strong></div>
+      </div>
+      <div class="devread"><span>当前位置</span><b id="devpos">—</b></div>
+      <div class="devread"><span>准星探测</span><b id="devlook">—</b></div>
+      <div class="devread"><span>当前异象</span><b id="devactive">—</b></div>
+      <div class="devread"><span>巡察者</span><b id="devpatrol">—</b></div>
+      <div class="devread"><span>学生会</span><b id="devinspection">—</b></div>
+      <div class="devread"><span>移动流程</span><b id="devtravel">—</b></div>
+      <div class="devsection"><div><h3>设定数值</h3><p>范围 0–100；归零或满值可能触发死亡</p></div></div>
+      <div class="devrow"><select id="devstatkey" aria-label="选择要设定的数值"><option value="san">SAN</option><option value="stam">体力</option><option value="viol">违规</option><option value="tt">同化</option></select><input id="devstatvalue" type="number" min="0" max="100" step="any" value="50" aria-label="数值"><button type="button" onclick="Dev.setStat()">设定</button></div>
+      <div class="devbuttons"><button type="button" onclick="Dev.san()">恢复 SAN / 体力</button><button type="button" onclick="Dev.revive()">复活角色</button></div>
+    </section>
+    <section class="devpage" id="dev-page-scene" hidden>
+      <div class="devsection"><div><h3>场景传送</h3><p>传送会结束并结算异象、关闭选择；室内会自动存档</p></div></div>
+      <label for="devroomFilter">室内位置</label><input id="devroomFilter" type="search" placeholder="搜索名称或 ID" oninput="Dev.filter('room')">
+      <div class="devrow"><select id="devroom" aria-label="室内位置"></select><button type="button" id="devroomGo" onclick="Dev.tp()">传送</button></div><small id="devroomCount"></small>
+      <label for="devoutFilter">室外位置</label><input id="devoutFilter" type="search" placeholder="搜索地点" oninput="Dev.filter('out')">
+      <div class="devrow"><select id="devout" aria-label="室外位置"></select><button type="button" id="devoutGo" onclick="Dev.tpo()">传送</button></div><small id="devoutCount"></small>
+      <div class="devsection"><div><h3>调整时间</h3><p>游戏内时间；跨日和检查触发规则照常生效，回拨不撤销已发生的事件。</p></div></div>
+      <div class="devbuttons"><button type="button" onclick="Dev.time(-30)">−30 分钟</button><button type="button" onclick="Dev.time(30)">+30 分钟</button></div>
+      <label for="devtime">指定时刻（07:20–次日 00:59）</label>
+      <div class="devrow devtime-row"><input id="devtime" type="time" value="07:20" step="60"><button type="button" id="devtimeGo" onclick="Dev.setTime()">设定</button></div>
+      <div class="devbuttons"><button type="button" onclick="Dev.setTime('07:20')">早晨 07:20</button><button type="button" onclick="Dev.setTime('22:40')">夜间 22:40</button><button type="button" onclick="Dev.setTime('12:49')">午间检查前</button><button type="button" onclick="Dev.setTime('17:49')">傍晚检查前</button></div>
+    </section>
+    <section class="devpage" id="dev-page-items" hidden>
+      <div class="devsection"><div><h3>背包与快捷栏</h3><p>遵循八格容量；移除物品会同步清理手持状态和快捷栏。</p></div></div>
+      <p class="devinventory" id="devbag"></p>
+      <label for="devitemFilter">选择物品</label><input id="devitemFilter" type="search" placeholder="搜索名称或 ID" oninput="Dev.filter('item')">
+      <select class="devwide" id="devitem" aria-label="调试物品" onchange="Dev.refreshInventory()"></select><small id="devitemCount"></small>
+      <p class="devhint" id="devitemInfo"></p>
+      <div class="devbuttons"><button type="button" id="devitemGo" onclick="Dev.editItem('add')">添加到背包</button><button type="button" id="devitemRemove" onclick="Dev.editItem('remove')">移除此物品</button><button type="button" id="devitemHot1" onclick="Dev.editItem('hot',0)">放入快捷栏 1</button><button type="button" id="devitemHot2" onclick="Dev.editItem('hot',1)">放入快捷栏 2</button></div>
+      <p class="devhint" id="devhotbar"></p>
+    </section>
+    <section class="devpage" id="dev-page-events" hidden>
+      <div class="devsection"><div><h3>异象</h3><p>触发会结束当前异象并跳过正常出现条件</p></div></div>
+      <label for="devanomFilter">选择异象</label><input id="devanomFilter" type="search" placeholder="搜索名称或 ID" oninput="Dev.filter('anom')">
+      <div class="devrow"><select id="devanom" aria-label="选择异象"></select><button type="button" id="devanomGo" onclick="Dev.anom()">触发</button><button type="button" onclick="Dev.anomEnd()">结束</button></div><small id="devanomCount"></small>
+      <div class="devsection"><div><h3>巡察与检查</h3><p>巡察遵循地点和时段规则；手动检查立即开始并按实际玩法结算。取消检查不结算结束奖惩。</p></div></div>
+      <div class="devbuttons"><button type="button" id="devpatrolStart" onclick="Dev.startPatrol()">开始巡察预警</button><button type="button" id="devpatrolStop" onclick="Dev.stopPatrol()">结束当前巡察</button><button type="button" id="devinspectionStart" onclick="Dev.startInspection()">开始实际检查</button><button type="button" id="devinspectionStop" onclick="Dev.cancelInspection()">取消检查及排队</button></div>
+      <div class="devsection"><div><h3>画面演出</h3><p>仅播放画面效果</p></div></div>
+      <div class="devrow"><select id="devanim" aria-label="选择画面演出"><option value="1">融入</option><option value="2">雨</option><option value="3">镜面</option></select><button type="button" onclick="Dev.anim(+document.getElementById('devanim').value)">播放</button></div>
+      <div class="devsection"><div><h3>死亡效果</h3><p>预览不会消耗道具或删除存档</p></div></div>
+      <label for="devdeathFilter">选择死亡效果</label><input id="devdeathFilter" type="search" placeholder="搜索效果" oninput="Dev.filter('death')">
+      <div class="devrow"><select id="devdeath" aria-label="选择死亡效果"></select><button type="button" id="devdeathGo" onclick="Dev.previewDeath()">预览</button></div><small id="devdeathCount"></small>
+      <button type="button" class="devwide" id="devpreviewStop" onclick="Dev.stopPreview()">停止调试预览</button>
+      <button type="button" class="devdanger" onclick="Dev.death()">触发实际死亡</button><p class="devhint">实际死亡遵循救命道具和存档规则，可能删除存档。</p>
+    </section>
+    <section class="devpage" id="dev-page-tools" hidden>
+      <div class="devsection"><div><h3>调试开关</h3><p>当前开关状态会高亮显示</p></div></div>
+      <div class="devbuttons">
+        <button type="button" id="devfast" aria-pressed="false" onclick="Dev.fast()">快跑 ×2.6</button>
+        <button type="button" id="devgod" aria-pressed="false" onclick="Dev.god()">无敌</button>
+        <button type="button" id="devsearch" aria-pressed="false" onclick="Dev.search()">翻找读条</button>
+        <button type="button" id="devfake" aria-pressed="false" onclick="Dev.fakeNormal()">假正常</button>
+      </div>
+      <div class="devsection"><div><h3>场景显示</h3><p>高亮表示该部分已隐藏</p></div></div>
+      <div class="devbuttons">
+        <button type="button" id="devhide-canopy" aria-pressed="false" onclick="Dev.hide('canopy')">柱廊顶</button>
+        <button type="button" id="devhide-sign" aria-pressed="false" onclick="Dev.hide('sign')">花园牌</button>
+        <button type="button" id="devhide-link" aria-pressed="false" onclick="Dev.hide('link')">连廊</button>
+        <button type="button" id="devhide-fence" aria-pressed="false" onclick="Dev.hide('fence')">围墙</button>
+      </div>
+      <div class="devsection"><div><h3>其他操作</h3></div></div>
+      <div class="devbuttons"><button type="button" onclick="Dev.lamps()">触发走廊灯异象</button><button type="button" onclick="Dev.prologue()">重看前情提要</button></div>
+      <div class="devsection"><div><h3>氛围</h3><p>五分钟体验切片：安静、先听后见、危险操作、兑现或落空、余韵</p></div></div>
+      <div class="devbuttons"><button type="button" onclick="DreadSlice.start();Dev.close()">开始五分钟切片</button><button type="button" onclick="Dread.falseThreat(Dread.pickAmbient(),1)">来一声假威胁</button></div>
+      <div class="devsection"><div><h3>运行诊断</h3><p>查看当前状态及最近操作；生成的报告只用于排查，不是游戏存档。</p></div></div>
+      <div class="devread"><span>输入</span><b id="devinput">—</b></div>
+      <div class="devread"><span>画质 / 窗口</span><b id="devquality">—</b></div>
+      <div class="devread"><span>渲染资源</span><b id="devrender">—</b></div>
+      <div class="devbuttons"><button type="button" id="devreportGo" onclick="Dev.makeReport()">生成诊断文本</button><button type="button" id="devreportDownload" onclick="Dev.downloadReport()">下载诊断 JSON</button></div>
+      <textarea id="devreport" rows="6" aria-label="诊断报告，可选中复制" readonly hidden></textarea>
+      <div class="devsection"><div><h3>最近操作</h3><p>本次页面会话记录最近 20 条，面板展示最后 5 条；随诊断报告导出。</p></div></div>
+      <p id="devhistory"></p>
+    </section>
+    <p class="devhint">浮窗默认不冻结游戏，可手动暂停；真实时间倒计时仍会继续。<span class="devkbd">F2 关闭，面板内 Esc 也可关闭。环视时按 Alt 放出鼠标、游戏不暂停，点画面收回。</span></p>
+  </div>
+  <div class="devfooter"><span id="devmessage" role="status" aria-live="polite">调试操作会改变当前游戏状态。</span><span id="devscroll" hidden>↓ 可滚动</span></div>
+</div>
+<div id="touch">
+  <div id="stick" role="group" aria-label="移动摇杆"><div id="knob"></div></div>
+  <button type="button" class="tbtn" id="tAct" aria-label="交互"><span id="tActL">交互</span></button>
+  <div id="tside"><button type="button" class="tsm" id="tTorch" onclick="toggleTorch()">手电</button></div>
+  <div id="ttop"><button type="button" class="tsm" id="tBook" onclick="UI.toggle(UI.lastTab||'bag')" aria-label="随身手册">手册</button>
+  <button type="button" class="tbtn" id="tPause" aria-label="暂停"></button></div>
+</div>
+
+<script src="game3d/lib/three.min.js"></script>
+<script src="game3d/js/core.js"></script>
+<script src="game3d/js/map.js"></script>
+<script src="game3d/js/quality.js"></script>
+<script src="game3d/js/model/assets.js"></script>
+<script src="game3d/js/engine/api.js"></script>
+<script src="game3d/js/render.js"></script>
+<script src="game3d/js/engine/three.js"></script>
+<script src="game3d/js/engine/scene.js"></script>
+<script src="game3d/js/engine/presentation.js"></script>
+<script src="game3d/js/model/materials.js"></script>
+<script src="game3d/js/model/kit.js"></script>
+<script src="game3d/js/model/figure.js"></script>
+<script src="game3d/js/model/specs.js"></script>
+<script src="game3d/js/model/props.js"></script>
+<script src="game3d/js/model/furniture.js"></script>
+<script src="game3d/js/model/room.js"></script>
+<script src="game3d/js/model/building.js"></script>
+<script src="game3d/js/model/outdoor.js"></script>
+<script src="game3d/js/world.js"></script>
+<script src="game3d/js/collision.js"></script>
+<script src="game3d/js/spiral.js"></script>
+<script src="game3d/js/model/spiral.js"></script>
+<script src="game3d/js/patrol.js"></script>
+<script src="game3d/js/portal.js"></script>
+<script src="game3d/js/model/elevator-prefab.js"></script>
+<script src="game3d/assets/elevator_mesh.js"></script>
+<script src="game3d/js/env.js"></script>
+<script src="game3d/js/elevator-asset.js"></script>
+<script src="game3d/js/elevator.js"></script>
+<script src="game3d/js/car-chase.js"></script>
+<script src="game3d/js/hands.js"></script>
+<script src="game3d/js/cutscene.js"></script>
+<script src="game3d/js/fx/gaze.js"></script>
+<script src="game3d/js/fx/death-timeline.js"></script>
+<script src="game3d/js/fx/anomaly-fx.js"></script>
+<script src="game3d/js/fx/death-cg.js"></script>
+<script src="game3d/js/fx/weather.js"></script>
+<script src="game3d/js/fx/cup.js"></script>
+<script src="game3d/js/fx/smile.js"></script>
+<script src="game3d/js/fx/traces.js"></script>
+<script src="game3d/js/fx/classroom.js"></script>
+<script src="game3d/js/fx/dread-fx.js"></script>
+<script src="game3d/js/lighting.js"></script>
+<script src="game3d/js/shade.js"></script>
+<script src="game3d/js/state.js"></script>
+<script src="game3d/js/input.js"></script>
+<script src="game3d/js/ui.js"></script>
+<script src="game3d/js/systems.js"></script>
+<script src="game3d/js/school-day.js"></script>
+<script src="game3d/js/inspection.js"></script>
+<script src="game3d/js/anomaly.js"></script>
+<script src="game3d/js/dread.js"></script>
+<script src="game3d/js/items.js"></script>
+<script src="game3d/js/story.js"></script>
+<script src="game3d/js/interact.js"></script>
+<script src="game3d/js/audio.js"></script>
+<script src="game3d/js/save.js"></script>
+<script src="game3d/js/settings.js"></script>
+<script src="game3d/js/dev.js"></script>
+<script src="game3d/js/pcgame.js"></script>
+<script src="game3d/js/phone.js"></script>
+<script src="game3d/js/lesson.js"></script>
+<script src="game3d/js/investigation.js"></script>
+<script src="game3d/js/exploration-map.js"></script>
+<script src="game3d/js/playtest.js"></script>
+<script src="game3d/js/mono.js"></script>
+<script src="game3d/js/mobile.js"></script>
+<script src="game3d/js/prologue.js"></script>
+<script src="game3d/js/main.js"></script>
+</body>
+</html>
